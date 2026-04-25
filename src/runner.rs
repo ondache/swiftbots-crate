@@ -24,7 +24,7 @@ impl TaskRunner {
             .filter(|(_, bot)| bot.enabled)
             .map(|(_, bot)| bot.clone())
             .collect();
-        info!("Bots for running: {}", bots_to_run.iter().map(|bot| bot.bot.name.clone()).collect::<Vec<String>>().join(", "));
+        info!("Bots for running: {}", bots_to_run.iter().map(|bot| bot.name.clone()).collect::<Vec<String>>().join(", "));
         let handles: Vec<_> = bots_to_run
             .iter()
             .map(|bot| tokio::spawn(Self::run_bot(bot.clone())))
@@ -44,7 +44,7 @@ impl TaskRunner {
     }
 
     async fn run_bot(bot: Arc<BotBox>) {
-        info!("Starting bot: {}", bot.bot.name);
+        info!("Starting bot: {}", bot.name);
         let (tx, mut rx) = mpsc::channel::<Request>(100);
         tokio::spawn((bot.clone().listener)(tx));
 
@@ -55,11 +55,11 @@ impl TaskRunner {
                 request: None,
             };
             if let Some(request) = rx.recv().await {
-                debug!("Bot {} received request", bot.bot.name);
+                debug!("Bot {} received request", bot.name);
                 ctx.request = Some(request);
                 tokio::spawn((bot.entry)(ctx));
             } else {
-                info!("Bot {} is stopped", bot.bot.name);
+                info!("Bot {} is stopped", bot.name);
                 break;
             }
         }

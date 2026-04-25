@@ -1,11 +1,11 @@
 use std::collections::{HashMap};
-use crate::bot::{BotBox, Bot};
+use crate::bot::BotBox;
 use crate::runner::TaskRunner;
 use std::sync::Arc;
-use tracing::{debug, info};
+use tracing::info;
 
 pub struct SwiftBots {
-    bots: HashMap<String, Bot>,
+    bots: HashMap<String, Arc<BotBox>>,
 }
 
 impl SwiftBots {
@@ -15,7 +15,7 @@ impl SwiftBots {
         }
     }
 
-    pub fn add_bot(mut self, bot: Bot) -> Self {
+    pub fn add_bot(mut self, bot: Arc<BotBox>) -> Self {
         if self.bots.contains_key(&bot.name) {
             let message = format!("Bot with name {} already exists", bot.name);
             panic!("{}", message);
@@ -31,17 +31,9 @@ impl SwiftBots {
             panic!("{}", message);
         }
         info!("Starting SwiftBots application with {} bots", self.bots.len());
-        let bots = Self::build_bots(self.bots);
-        TaskRunner::new(bots)
+        TaskRunner::new(self.bots)
             .run_app()
             .await;
-    }
-
-    fn build_bots(bots: HashMap<String, Bot>) -> HashMap<String, Arc<BotBox>> {
-        debug!("Building bots");
-        bots.into_iter()
-            .map(|(name, bot)| (name, Arc::new(bot.build())))
-            .collect()
     }
 }
 

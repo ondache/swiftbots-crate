@@ -18,7 +18,7 @@ async fn main() {
 
     println!("Welcome to the {}! Type anything and press enter:", bot.name);
     SwiftBots::new()
-        .add_bot(bot)
+        .add_bot(bot.build())
         .run()
         .await;
 }

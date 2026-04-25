@@ -38,7 +38,7 @@ pub async fn trace_middleware(ctx: MiddlewareContext, next: CallNextMiddleware) 
         "request",
         "trace_id" = trace_id,
         "correlation_id" = correlation_id,
-        "bot" = ctx.bot_box.bot.name.clone(),
+        "bot" = ctx.bot_box.name.clone(),
     );
 
     async move {

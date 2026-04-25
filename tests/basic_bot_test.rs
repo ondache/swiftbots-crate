@@ -3,7 +3,6 @@ use swiftbots::{Bot, Request, SwiftBots};
 use tokio;
 use tokio::sync::mpsc;
 
-
 #[tokio::test]
 async fn base_handler_test() {
     let (result_tx, mut result_rx) = mpsc::channel(1);
@@ -23,7 +22,7 @@ async fn base_handler_test() {
         });
 
     SwiftBots::new()
-        .add_bot(bot)
+        .add_bot(bot.build())
         .run()
         .await;
 

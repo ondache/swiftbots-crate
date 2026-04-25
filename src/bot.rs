@@ -47,14 +47,24 @@ impl Bot {
         self
     }
 
-    pub fn build(mut self) -> BotBox {
+    fn configure_middlewares(&mut self) {
+        debug!("Configuring middlewares");
+
+        self.middlewares = Some(vec![
+            from_fn(trace_middleware),
+            from_fn(collect_user_context_middleware),
+            from_fn(execute_handler),
+        ])
+    }
+
+    pub fn build(mut self) -> Arc<BotBox> {
         debug!("Building bot: {}", self.name);
         self.configure_middlewares();
         let entry = compose_middlewares(self.middlewares.unwrap_or_else(|| {
             let msg = format!("Bot {} has no middlewares set", self.name);
             panic!("{}", msg);
         }));
-        BotBox {
+        Arc::new(BotBox {
             listener: self.listener_entry.unwrap_or_else(|| {
                 let msg = format!("Bot {} has no listener", self.name);
                 panic!("{}", msg);
@@ -65,29 +75,13 @@ impl Bot {
             }),
             enabled: self.run_at_startup,
             entry,
-            bot: Bot {
-                name: self.name,
-                run_at_startup: self.run_at_startup,
-                listener_entry: None,
-                handler_entry: None,
-                middlewares: None,
-            },
-        }
-    }
-
-    fn configure_middlewares(&mut self) {
-        debug!("Configuring middlewares");
-
-        self.middlewares = Some(vec![
-            from_fn(trace_middleware),
-            from_fn(collect_user_context_middleware),
-            from_fn(execute_handler),
-        ])
+            name: self.name,
+        })
     }
 }
 
 pub struct BotBox {
-    pub bot: Bot,
+    pub name: String,
     pub enabled: bool,
     pub listener: ListenerFunction,
     pub handler: HandlerFunction,
