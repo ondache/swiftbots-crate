@@ -8,6 +8,7 @@ pub struct Request {
 pub struct MiddlewareContext {
     pub bot_box: Arc<BotBox>,
     pub request: Option<Request>,
+    pub user_ctx: Option<Context>,
 }
 
 pub struct Context {

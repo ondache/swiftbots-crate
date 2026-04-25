@@ -1,4 +1,4 @@
-use swiftbots::{Bot, Context, Request, SwiftBots};
+use swiftbots::{Bot, Request, SwiftBots};
 use tokio;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc;
@@ -16,7 +16,7 @@ async fn main() {
             println!("Received message: {}", ctx.message);
         });
 
-    println!("Welcome to the console bot! Type anything and press enter:");
+    println!("Welcome to the {}! Type anything and press enter:", bot.name);
     SwiftBots::new()
         .add_bot(bot)
         .run()

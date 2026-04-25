@@ -4,6 +4,7 @@ pub mod context;
 mod runner;
 pub mod middleware;
 pub mod types;
+mod utils;
 
 pub use crate::app::SwiftBots;
 pub use crate::bot::Bot;
