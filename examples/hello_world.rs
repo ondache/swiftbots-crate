@@ -5,27 +5,22 @@ use tokio::sync::mpsc;
 
 #[tokio::main]
 async fn main() {
-
     let bot = Bot::new("console bot".to_string())
-        .listener(listener)
-        .handler(handler);
+        .listener(async |tx: mpsc::Sender<Request>| {
+            loop {
+                let message = read_line().await;
+                tx.send(Request { message }).await.unwrap();
+            }
+        })
+        .handler(async |ctx| {
+            println!("Received message: {}", ctx.message);
+        });
 
     println!("Welcome to the console bot! Type anything and press enter:");
     SwiftBots::new()
         .add_bot(bot)
         .run()
         .await;
-}
-
-async fn listener(tx: mpsc::Sender<Request>) {
-    loop {
-        let message = read_line().await;
-        tx.send(Request { message }).await.unwrap();
-    }
-}
-
-async fn handler(ctx: Context) {
-    println!("Received message: {}", ctx.message);
 }
 
 async fn read_line() -> String {
