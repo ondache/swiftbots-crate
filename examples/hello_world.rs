@@ -1,19 +1,19 @@
-use swiftbots::{Bot, Request, SwiftBots};
+use swiftbots::{Bot, SwiftBots, FeedContext};
 use tokio;
 use tokio::io::{AsyncBufReadExt, BufReader};
-use tokio::sync::mpsc;
+use serde_json::json;
 
 #[tokio::main]
 async fn main() {
     let bot = Bot::new("console bot".to_string())
-        .listener(async |tx: mpsc::Sender<Request>| {
+        .listener(async |tx| {
             loop {
                 let message = read_line().await;
-                tx.send(Request { message }).await.unwrap();
+                tx.send(FeedContext { data: json!({"message": message}) }).await.unwrap();
             }
         })
         .handler(async |ctx| {
-            println!("Received message: {}", ctx.message);
+            println!("Received message: {}", ctx.req["message"]);
         });
 
     println!("Welcome to the {}! Type anything and press enter:", bot.name);

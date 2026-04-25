@@ -1,9 +1,10 @@
 use crate::bot::BotBox;
-use crate::context::{MiddlewareContext, Request};
+use crate::context::{MiddlewareContext, FeedContext};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::{info, error, debug, warn};
+use serde_json::json;
 
 
 pub struct TaskRunner {
@@ -45,18 +46,18 @@ impl TaskRunner {
 
     async fn run_bot(bot: Arc<BotBox>) {
         info!("Starting bot: {}", bot.name);
-        let (tx, mut rx) = mpsc::channel::<Request>(100);
+        let (tx, mut rx) = mpsc::channel::<FeedContext>(100);
         tokio::spawn((bot.clone().listener)(tx));
 
         loop {
             let mut ctx = MiddlewareContext {
                 bot_box: bot.clone(),
-                user_ctx: None,
-                request: None,
+                user_context: json!({}),
+                feed_context: json!({}),
             };
             if let Some(request) = rx.recv().await {
                 debug!("Bot {} received request", bot.name);
-                ctx.request = Some(request);
+                ctx.feed_context = request.data;
                 tokio::spawn((bot.entry)(ctx));
             } else {
                 info!("Bot {} is stopped", bot.name);

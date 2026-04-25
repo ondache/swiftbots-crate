@@ -7,5 +7,6 @@ pub mod types;
 mod utils;
 
 pub use crate::app::SwiftBots;
-pub use crate::bot::Bot;
-pub use crate::context::{Context, Request};
+pub use crate::bot::{Bot, ChatBot};
+pub use crate::types::{Json};
+pub use crate::context::{Context, FeedContext, SenderContext};
