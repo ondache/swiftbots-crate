@@ -19,7 +19,7 @@ default = []
 
 middleware = []
 basic = ["middleware", "dep:tower"]
-chat = []
+chat = ["middleware", "dep:tower"]
 
 full = [
     "basic",

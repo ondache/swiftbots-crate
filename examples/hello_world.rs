@@ -3,9 +3,10 @@ use tokio;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use serde_json::json;
 use http::Request;
+use swiftbots::types::SwiftBotsError;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), SwiftBotsError>{
     let bot = BasicBot::new("console bot".to_string())
         .listener(async |tx| {
             loop {
@@ -15,15 +16,16 @@ async fn main() {
                 )).unwrap();
             }
         })
-        .handler(async |ctx| {
-            println!("Received message: {}", ctx.body()["message"]);
+        .handler(async |req| {
+            println!("Received message: {}", req.body()["message"]);
         });
 
     println!("Welcome to the {}! Type anything and press enter:", bot.name);
     SwiftBots::new()
-        .add_bot(bot.build())
+        .add_bot(bot.build()?)?
         .run()
         .await;
+    Ok(())
 }
 
 async fn read_line() -> String {

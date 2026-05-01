@@ -6,7 +6,7 @@ use tower::{ServiceBuilder, BoxError, ServiceExt, Service};
 use tower::util::BoxCloneService;
 use tracing::{debug, info};
 
-use crate::types::BoxFuture;
+use crate::types::{BoxFuture, SwiftBotsError};
 use crate::basic::types::{ListenerFunction, HandlerFunction};
 use crate::middleware::{
     BaseHandler,
@@ -55,35 +55,33 @@ where TRequest: Send + Sync + 'static
         self
     }
 
-    pub fn build(self) -> Arc<BotBox> {
+    pub fn build(self) -> Result<Arc<BotBox>, SwiftBotsError> {
         let name = Arc::new(self.name);
         let run_at_startup = self.run_at_startup;
-        debug!("Building bot: {}", name);
-        let listener_entry = self.listener_entry.unwrap_or_else(|| {
-            let msg = format!("Bot {} has no listener", name);
-            panic!("{}", msg);
-        });
-        let handler_entry = self.handler_entry.unwrap_or_else(|| {
-            let msg = format!("Bot {} has no handler", name);
-            panic!("{}", msg);
-        });
+        debug!("Building bot: '{}'", name);
+        let listener_entry = self
+            .listener_entry
+            .ok_or_else(|| SwiftBotsError::BotHasNoListener(name.to_string()))?;
+        let handler_entry = self
+            .handler_entry
+            .ok_or_else(|| SwiftBotsError::BotHasNoHandler(name.to_string()))?;
         let base_handler = BaseHandler::<TRequest> { bot_entry: handler_entry };
-        let _service = ServiceBuilder::new()
+        let service = ServiceBuilder::new()
             // .layer(LoggingLayer)
             .service(EntryService { inner: base_handler })
             .boxed_clone();
         let service_task_factory = Self::get_service_tasks(
             name.clone(),
-            _service,
+            service,
             listener_entry,
         );
-        Arc::new(BotBox {
+        Ok(Arc::new(BotBox {
             enabled: run_at_startup,
             name,
             service_task_factory,
             service_handles: Vec::new(),
             onetime_handles: Vec::new(),
-        })
+        }))
     }
 
     fn get_service_tasks(
@@ -111,11 +109,11 @@ where TRequest: Send + Sync + 'static
             async move {
                 loop {
                     if let Some(request) = rx.recv().await {
-                        debug!("Bot {} received request", name);
+                        debug!("Bot '{}' received request", name);
                         let mut service = service.clone();
                         tokio::spawn(service.call(request));
                     } else {
-                        info!("Bot {} is stopped", name);
+                        info!("Bot '{}' is stopped", name);
                         break;
                     }
                 }
