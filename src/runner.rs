@@ -1,11 +1,13 @@
-use crate::bot::BotBox;
-use crate::context::{MiddlewareContext, FeedContext};
+use crate::bot::{BotBox};
+use crate::context::{BasicRequest};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::mpsc;
+use tokio::task::JoinHandle;
+use tokio::task::JoinSet;
 use tracing::{info, error, debug, warn};
 use serde_json::json;
-
+use tower::{Layer, BoxError, Service, ServiceExt, ServiceBuilder};
 
 pub struct TaskRunner {
     bots: HashMap<String, Arc<BotBox>>,
@@ -19,50 +21,29 @@ impl TaskRunner {
     }
 
     pub async fn run_app(self) {
+        let mut set = JoinSet::new();
         debug!("App run started");
         let bots_to_run: Vec<Arc<BotBox>> = self.bots
             .iter()
             .filter(|(_, bot)| bot.enabled)
             .map(|(_, bot)| bot.clone())
             .collect();
-        info!("Bots for running: {}", bots_to_run.iter().map(|bot| bot.name.clone()).collect::<Vec<String>>().join(", "));
-        let handles: Vec<_> = bots_to_run
+        info!("Bots for running: {}", bots_to_run
             .iter()
-            .map(|bot| tokio::spawn(Self::run_bot(bot.clone())))
-            .collect();
-
-        for handle in handles {
-            let status = handle.await;
-            if let Ok(_status) = status {
-                warn!("Bot task completed");
-            }
-            if let Err(err) = status {
-                error!("Bot task failed: {:?}", err);
+            .map(|bot| bot.name.as_str())
+            .collect::<Vec<&str>>()
+            .join(", "));
+        for bot in bots_to_run.iter() {
+            // let mut handles = &bot.service_handles;
+            for task in bot.clone().service_task_factory.clone()() {
+                // let handle = tokio::spawn(task);
+                // handles.push(handle.clone());
+                set.spawn(task);
             }
         }
+
+        let output = set.join_all().await;
 
         warn!("All bots are stopped");
-    }
-
-    async fn run_bot(bot: Arc<BotBox>) {
-        info!("Starting bot: {}", bot.name);
-        let (tx, mut rx) = mpsc::channel::<FeedContext>(100);
-        tokio::spawn((bot.clone().listener)(tx));
-
-        loop {
-            let mut ctx = MiddlewareContext {
-                bot_box: bot.clone(),
-                user_context: json!({}),
-                feed_context: json!({}),
-            };
-            if let Some(request) = rx.recv().await {
-                debug!("Bot {} received request", bot.name);
-                ctx.feed_context = request.data;
-                tokio::spawn((bot.entry)(ctx));
-            } else {
-                info!("Bot {} is stopped", bot.name);
-                break;
-            }
-        }
     }
 }

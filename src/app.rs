@@ -1,5 +1,5 @@
 use std::collections::{HashMap};
-use crate::bot::BotBox;
+use crate::bot::{BotBox};
 use crate::runner::TaskRunner;
 use std::sync::Arc;
 use tracing::info;
@@ -16,12 +16,12 @@ impl SwiftBots {
     }
 
     pub fn add_bot(mut self, bot: Arc<BotBox>) -> Self {
-        if self.bots.contains_key(&bot.name) {
+        if self.bots.contains_key(bot.name.as_str()) {
             let message = format!("Bot with name {} already exists", bot.name);
             panic!("{}", message);
         }
         info!("Registering bot: {}", bot.name);
-        self.bots.insert(bot.name.clone(), bot);
+        self.bots.insert(bot.name.to_string(), bot);
         self
     }
 

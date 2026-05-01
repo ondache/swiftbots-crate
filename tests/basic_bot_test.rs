@@ -1,24 +1,25 @@
 use std::time::Duration;
-use swiftbots::{Bot, FeedContext, SwiftBots};
+use swiftbots::{BasicBot, BasicRequest, SwiftBots};
 use tokio;
-use tokio::sync::mpsc::{Sender, channel};
+use tokio::sync::mpsc::{UnboundedSender, channel};
 use serde_json::json;
 
 #[tokio::test]
 async fn base_handler_test() {
-    let (result_tx, mut result_rx) = channel(1);
+    let (mut result_tx, mut result_rx) = channel(1);
 
-    let bot = Bot::new("test".to_string())
-        .listener(async move |tx: Sender<FeedContext>| {
+    let bot = BasicBot::new("test".to_string())
+        .listener(async move |tx: UnboundedSender<BasicRequest>| {
             tokio::time::sleep(Duration::from_millis(0)).await;
             let message = "Test Value 1".to_string();
-            tx.send(FeedContext { data: json!({"message": message}) }).await.unwrap();
+            tx.send(BasicRequest { data: json!({"message": message}) }).unwrap();
         })
         .handler(move |ctx| {
-            let result_tx: Sender<String> = result_tx.clone();
+            let result_tx = result_tx.clone();
             async move {
                 tokio::time::sleep(Duration::from_millis(0)).await;
-                result_tx.send(ctx.req["message"].as_str().unwrap().to_string() + "2").await.unwrap();
+                let message = ctx.data["message"].as_str().unwrap().to_string();
+                result_tx.send(message + "2").await.unwrap();
             }
         });
 
