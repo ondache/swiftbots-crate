@@ -1,13 +1,13 @@
 use std::future::Future;
-use crate::types::HandlerFunction;
+use crate::types::BoxFuture;
 use std::pin::Pin;
 use std::task::{Context, Poll};
+use std::sync::Arc;
 use tower::{BoxError, Service};
 
 
 // static TRACE_ID_SEED: AtomicU64 = AtomicU64::new(1);
 // static CORRELATION_ID_SEED: AtomicU64 = AtomicU64::new(2);
-//
 // 
 // pub async fn trace_middleware(ctx: MiddlewareContext, next: CallNextMiddleware) {
 //     debug!("trace_middleware");
@@ -27,29 +27,10 @@ use tower::{BoxError, Service};
 //     .await
 // }
 // 
-// pub async fn copy_user_context_middleware(mut ctx: MiddlewareContext, next: CallNextMiddleware) {
-//     debug!("collect_user_context_middleware");
-//     ctx.user_context = ctx.feed_context.clone();
-//     next(ctx).await
-// }
 
-// pub async fn execute_handler_middleware(ctx: MiddlewareContext, _: CallNextMiddleware) {
-//     debug!("execute_handler");
-//     let user_ctx: BaseContext = BaseContext {
-//         bot_box: ctx.bot_box.clone(),
-//         req: ctx.user_context,
-//     };
-//     (ctx.bot_box.handler)(user_ctx).await
-// }
-
-// pub async fn fill_chat_context_middleware(mut ctx: MiddlewareContext, next: CallNextMiddleware) {
-//     debug!("collect_user_context_middleware");
-//     ctx.user_context = ctx.feed_context.clone();
-//     next(ctx).await
-// }
 
 pub struct BaseHandler <TRequest> {
-    pub bot_entry: HandlerFunction<TRequest>,
+    pub bot_entry: Arc<dyn Fn(TRequest) -> BoxFuture<()> + Send + Sync>,
 }
 
 impl<TRequest> Clone for BaseHandler<TRequest> {

@@ -1,11 +1,16 @@
 pub mod app;
 pub mod bot;
-pub mod context;
-mod runner;
-pub mod middleware;
+pub mod runner;
 pub mod types;
-mod utils;
+pub mod utils;
+#[cfg(feature = "basic")]
+pub mod basic;
+pub mod chat;
 
 pub use crate::app::SwiftBots;
-pub use crate::context::{SenderContext};
-pub use crate::bot::{BasicBot};
+
+#[cfg(feature = "basic")]
+pub use crate::basic::bot::BasicBot;
+
+#[cfg(feature = "middleware")]
+pub mod middleware;

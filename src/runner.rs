@@ -1,4 +1,4 @@
-use crate::bot::{BotBox};
+use crate::bot::BotBox;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::task::JoinSet;

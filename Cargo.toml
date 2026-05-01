@@ -5,11 +5,32 @@ edition = "2024"
 
 [dependencies]
 tokio = { version = "1.52.1", features = ["sync", "rt"] }
-tower = { version = "0.5.3", features = ["util"] }
 tracing = "0.1.44"
+tower = { version = "0.5.3", optional = true, features = ["util"] }
 
 [dev-dependencies]
 http = "1.4.0"
 serde_json = "1.0.149"
 tokio = { version = "1.52.1", features = ["macros", "rt-multi-thread", "io-std", "io-util"] }
 tracing-subscriber = "0.3.23"
+
+[features]
+default = []
+
+middleware = []
+basic = ["middleware", "dep:tower"]
+chat = []
+
+full = [
+    "basic",
+    "chat",
+    "middleware"
+]
+
+[[example]]
+name = "hello_world"
+required-features = ["basic"]
+
+[[example]]
+name = "chatbot"
+required-features = ["chat"]
