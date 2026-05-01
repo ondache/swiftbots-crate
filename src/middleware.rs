@@ -1,39 +1,13 @@
+use std::future::Future;
+use crate::types::HandlerFunction;
 use std::pin::Pin;
-use std::sync::Arc;
-use crate::context::{BasicRequest};
-use crate::types::{HandlerFunction, Json};
-use tracing::{info_span, Instrument, debug};
-use std::sync::atomic::{AtomicU64};
 use std::task::{Context, Poll};
-use tower::BoxError;
-use tower_layer::Layer;
-use tower_service::Service;
-use crate::utils::generate_random_id;
+use tower::{BoxError, Service};
 
 
 // static TRACE_ID_SEED: AtomicU64 = AtomicU64::new(1);
 // static CORRELATION_ID_SEED: AtomicU64 = AtomicU64::new(2);
-// 
-// pub fn from_fn<F, Fut>(f: F) -> Middleware
-//     where
-//         F: Fn(MiddlewareContext, CallNextMiddleware) -> Fut + Send + Sync + 'static,
-//         Fut: Future<Output = ()> + Send + 'static
-// {
-//     Arc::new(move |ctx, next| {
-//         Box::pin(f(ctx, next))
-//     })
-// }
-// 
-// pub fn compose_middlewares(middlewares: Vec<Middleware>) -> CallNextMiddleware {
-//     let mut next_layer: CallNextMiddleware = Arc::new(|_| Box::pin(async {}));
-//     for middleware in middlewares.into_iter().rev() {
-//         let cur_layer = middleware;
-//         next_layer = Arc::new(move |ctx| {
-//             cur_layer(ctx, next_layer.clone())
-//         })
-//     }
-//     next_layer
-// }
+//
 // 
 // pub async fn trace_middleware(ctx: MiddlewareContext, next: CallNextMiddleware) {
 //     debug!("trace_middleware");
@@ -74,12 +48,19 @@ use crate::utils::generate_random_id;
 //     next(ctx).await
 // }
 
-#[derive(Clone)]
 pub struct BaseHandler <TRequest> {
     pub bot_entry: HandlerFunction<TRequest>,
 }
 
-impl<TRequest: Send + 'static> Service<TRequest> for BaseHandler<TRequest> {
+impl<TRequest> Clone for BaseHandler<TRequest> {
+    fn clone(&self) -> Self {
+        BaseHandler {
+            bot_entry: self.bot_entry.clone(),
+        }
+    }
+}
+
+impl<TRequest: Send + Sync + 'static> Service<TRequest> for BaseHandler<TRequest> {
     type Response = ();
     type Error = BoxError;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;

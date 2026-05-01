@@ -1,27 +1,30 @@
 use std::sync::Arc;
-use crate::context::{BasicRequest, SenderContext};
 use std::future::Future;
-use std::pin::Pin;
-use serde_json::json;
 use crate::types::BoxFuture;
-use crate::types::{ListenerFunction, HandlerFunction, MessageHandlerFunction, SenderFunction, ListenerFunctionWrapper};
+use crate::types::{ListenerFunction, HandlerFunction};
 use crate::middleware::{
     BaseHandler,
     EntryService,
 };
 use tokio::sync::mpsc::{UnboundedSender, unbounded_channel, UnboundedReceiver};
-use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 use tower::{ServiceBuilder, BoxError, ServiceExt, Service};
 use tower::util::BoxCloneService;
 use tracing::{debug, info};
 
-pub struct BasicBot {
+pub struct BotBox {
+    pub name: Arc<String>,
+    pub enabled: bool,
+    pub service_task_factory: Arc<dyn Fn() -> Vec<BoxFuture<()>> + 'static>,
+    pub service_handles: Vec<JoinHandle<()>>,
+    pub onetime_handles: Vec<JoinHandle<()>>,
+}
+
+pub struct BasicBot <TRequest> {
     pub name: String,
     pub run_at_startup: bool,
-    listener_entry: Option<ListenerFunction<BasicRequest>>,
-    handler_entry: Option<HandlerFunction<BasicRequest>>,
-    // middlewares: Option<Vec<Middleware>>,
+    listener_entry: Option<ListenerFunction<TRequest>>,
+    handler_entry: Option<HandlerFunction<TRequest>>,
 }
 
 // pub struct ChatBot {
@@ -33,7 +36,9 @@ pub struct BasicBot {
 //     message_handlers: Vec<MessageHandlerFunction>,
 // }
 
-impl BasicBot {
+impl <TRequest> BasicBot<TRequest>
+where TRequest: Send + Sync + 'static
+{
     pub fn new(name: String) -> Self {
         BasicBot {
             name,
@@ -45,7 +50,7 @@ impl BasicBot {
 
     pub fn listener<F, Fut>(mut self, listener_func: F) -> Self
         where
-            F: Fn(UnboundedSender<BasicRequest>) -> Fut + Send + Sync + 'static,
+            F: Fn(UnboundedSender<TRequest>) -> Fut + Send + Sync + 'static,
             Fut: Future<Output = ()> + Send + 'static
     {
         self.listener_entry = Some(Arc::new(move |tx| {
@@ -56,7 +61,7 @@ impl BasicBot {
 
     pub fn handler<F, Fut>(mut self, handler_func: F) -> Self
         where
-            F: Fn(BasicRequest) -> Fut + Send + Sync + 'static,
+            F: Fn(TRequest) -> Fut + Send + Sync + 'static,
             Fut: Future<Output = ()> + Send + 'static
     {
         self.handler_entry = Some(Arc::new(move |ctx| {
@@ -65,19 +70,19 @@ impl BasicBot {
         self
     }
 
-    pub fn build(mut self) -> Arc<BotBox> {
+    pub fn build(self) -> Arc<BotBox> {
         let name = Arc::new(self.name);
         let run_at_startup = self.run_at_startup;
         debug!("Building bot: {}", name);
-        let listener_entry = Arc::new(self.listener_entry.unwrap_or_else(|| {
+        let listener_entry = self.listener_entry.unwrap_or_else(|| {
             let msg = format!("Bot {} has no listener", name);
             panic!("{}", msg);
-        }));
+        });
         let handler_entry = self.handler_entry.unwrap_or_else(|| {
             let msg = format!("Bot {} has no handler", name);
             panic!("{}", msg);
         });
-        let base_handler = BaseHandler::<BasicRequest> { bot_entry: handler_entry };
+        let base_handler = BaseHandler::<TRequest> { bot_entry: handler_entry };
         let _service = ServiceBuilder::new()
             // .layer(LoggingLayer)
             .service(EntryService { inner: base_handler })
@@ -92,17 +97,18 @@ impl BasicBot {
             name,
             service_task_factory,
             service_handles: Vec::new(),
+            onetime_handles: Vec::new(),
         })
     }
 
     fn get_service_tasks(
         name: Arc<String>,
-        service: BoxCloneService<BasicRequest, (), BoxError>,
-        listener_entry: Arc<ListenerFunction<BasicRequest>>,
+        service: BoxCloneService<TRequest, (), BoxError>,
+        listener_entry: ListenerFunction<TRequest>,
     ) -> Arc<dyn Fn() -> Vec<BoxFuture<()>> + 'static> {
         info!("get_service_tasks");
         let generator = move || {
-            let (tx, rx) = unbounded_channel::<BasicRequest>();
+            let (tx, rx) = unbounded_channel::<TRequest>();
             let mut tasks: Vec<BoxFuture<()>> = Vec::new();
             tasks.push(Self::get_awaitable_handler(name.clone(), service.clone(), rx));
             tasks.push(listener_entry.clone()(tx));
@@ -113,15 +119,15 @@ impl BasicBot {
 
     fn get_awaitable_handler(
         name: Arc<String>,
-        service: BoxCloneService<BasicRequest, (), BoxError>,
-        mut rx: UnboundedReceiver<BasicRequest>
+        service: BoxCloneService<TRequest, (), BoxError>,
+        mut rx: UnboundedReceiver<TRequest>
     ) -> BoxFuture<()> {
         Box::pin(
             async move {
                 loop {
-                    let mut service = service.clone();
                     if let Some(request) = rx.recv().await {
                         debug!("Bot {} received request", name);
+                        let mut service = service.clone();
                         tokio::spawn(service.call(request));
                     } else {
                         info!("Bot {} is stopped", name);
@@ -225,9 +231,43 @@ impl BasicBot {
 //     }
 // }
 
-pub struct BotBox {
-    pub name: Arc<String>,
-    pub enabled: bool,
-    pub service_task_factory: Arc<dyn Fn() -> Vec<BoxFuture<()>> + 'static>,
-    pub service_handles: Vec<JoinHandle<()>>,
-}
+// pub trait BotBoxTrait {
+//     fn name(&self) -> String;
+//     fn enabled(&self) -> bool;
+//     fn run(&self) -> BoxFuture<()>;
+// }
+// 
+// pub struct BotBoxTest1 {
+//     pub name: String,
+//     pub enabled: bool,
+//     pub permanent_tasks: Vec<BoxFuture<()>>,
+//     pub onetime_tasks: Vec<BoxFuture<()>>,
+// }
+
+// pub struct BotBox<TRequest> {
+
+
+// impl<TRequest> BotBoxTrait for BotBox<TRequest> {
+//     fn name(&self) -> String {
+//         self.name.clone()
+//     }
+//     fn enabled(&self) -> bool {
+//         self.enabled
+//     }
+//     async fn run(&self) {
+//         info!("Starting bot: {}", self.name);
+//         let (tx, mut rx) = unbounded_channel::<TRequest>();
+//         tokio::spawn((self.listener)(tx));
+// 
+//         loop {
+//             if let Some(request) = rx.recv().await {
+//                 debug!("Bot {} received request", self.name);
+//                 let mut service = self.service.clone();
+//                 tokio::spawn(service.call(request));
+//             } else {
+//                 info!("Bot {} is stopped", self.name);
+//                 break;
+//             }
+//         }
+//     }
+// }

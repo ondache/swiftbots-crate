@@ -1,13 +1,8 @@
 use crate::bot::{BotBox};
-use crate::context::{BasicRequest};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::mpsc;
-use tokio::task::JoinHandle;
 use tokio::task::JoinSet;
-use tracing::{info, error, debug, warn};
-use serde_json::json;
-use tower::{Layer, BoxError, Service, ServiceExt, ServiceBuilder};
+use tracing::{info, debug, warn};
 
 pub struct TaskRunner {
     bots: HashMap<String, Arc<BotBox>>,
@@ -34,15 +29,12 @@ impl TaskRunner {
             .collect::<Vec<&str>>()
             .join(", "));
         for bot in bots_to_run.iter() {
-            // let mut handles = &bot.service_handles;
             for task in bot.clone().service_task_factory.clone()() {
-                // let handle = tokio::spawn(task);
-                // handles.push(handle.clone());
                 set.spawn(task);
             }
         }
 
-        let output = set.join_all().await;
+        set.join_all().await;
 
         warn!("All bots are stopped");
     }

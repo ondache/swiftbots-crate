@@ -1,7 +1,8 @@
-use swiftbots::{BasicBot, SwiftBots, BasicRequest};
+use swiftbots::{BasicBot, SwiftBots};
 use tokio;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use serde_json::json;
+use http::Request;
 
 #[tokio::main]
 async fn main() {
@@ -9,11 +10,13 @@ async fn main() {
         .listener(async |tx| {
             loop {
                 let message = read_line().await;
-                tx.send(BasicRequest { data: json!({"message": message}) }).unwrap();
+                tx.send(Request::new(
+                    json!({"message": message}),
+                )).unwrap();
             }
         })
         .handler(async |ctx| {
-            println!("Received message: {}", ctx.data["message"]);
+            println!("Received message: {}", ctx.body()["message"]);
         });
 
     println!("Welcome to the {}! Type anything and press enter:", bot.name);
@@ -28,5 +31,5 @@ async fn read_line() -> String {
     let mut reader = BufReader::new(stdin);
     let mut line = String::new();
     reader.read_line(&mut line).await.expect("Failed to read line");
-    line
+    line.trim().to_string()
 }

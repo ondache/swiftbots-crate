@@ -1,0 +1,6 @@
+- add chatbot
+- add middlewares: error handling, rate limiting
+- use macros for listeners, handlers and senders
+- add oneshot runner
+- custom middlewares interface
+- separate BasicBot and ChatBot from the framework
