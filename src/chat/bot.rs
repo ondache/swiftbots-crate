@@ -124,8 +124,8 @@ impl <TBody: BodyTransform> ChatBot <TBody> {
             enabled: run_at_startup,
             name,
             service_task_factory,
-            service_handles: Vec::new(),
-            onetime_handles: Vec::new(),
+            service_handles: vec![],
+            onetime_handles: vec![],
         }))
     }
 
@@ -137,7 +137,7 @@ impl <TBody: BodyTransform> ChatBot <TBody> {
         info!("get_service_tasks");
         let generator = move || {
             let (tx, rx) = unbounded_channel::<Request<TBody>>();
-            let mut tasks: Vec<BoxFuture<()>> = Vec::new();
+            let mut tasks: Vec<BoxFuture<()>> = vec![];
             tasks.push(Self::get_awaitable_handler(name.clone(), service.clone(), rx));
             tasks.push(listener_entry.clone()(tx));
             tasks

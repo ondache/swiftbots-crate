@@ -41,7 +41,7 @@ where
         }
         let message: &str = chat_ctx.orig_message.as_str();
         let trie = self.trie.clone();
-        let mut matches_queue = search_matched_commands(&trie, &message);
+        let mut matches_queue = search_matched_commands(&trie, message);
         loop {
             let handler_candidate = matches_queue.peek();
             if let Some(handler_candidate) = handler_candidate {
@@ -57,8 +57,7 @@ where
 
                         let fut = self.inner.call(req);
                         return Box::pin(async move {
-                            let res = fut.await.map_err(Into::into);
-                            res
+                            fut.await.map_err(Into::into)
                         });
                     }
                     None => {
@@ -124,8 +123,7 @@ where
         }
         let fut = self.inner.call(req);
         Box::pin(async move {
-            let res = fut.await.map_err(Into::into);
-            res
+            fut.await.map_err(Into::into)
         })
     }
 }

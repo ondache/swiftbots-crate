@@ -84,11 +84,10 @@ pub fn search_token_trie<'a, TBody>(trie: &'a TokenTrie<TBody>, text: &'a str) -
     let binding = text.to_lowercase();
     let mut splitted = binding.split_whitespace();
     while current.is_some() {
-        if let Some(current) = current {
-            if let Some(TokenTrieValue::Leaf(command)) = current.get(FINAL_INDICATOR) {
+        if let Some(current) = current
+            && let Some(TokenTrieValue::Leaf(command)) = current.get(FINAL_INDICATOR) {
                 matches.push(command);
             }
-        }
         match splitted.next() {
             Some(word) => {
                 current = match current {
@@ -116,15 +115,15 @@ pub fn search_matched_commands<'a, TBody> (trie: &'a TokenTrie<TBody>, text: &'a
 pub fn compile_command_as_regex (name: &str) -> Result<Regex, Error> {
     let mut name = name.to_string();
     if name.is_empty() {
-        return Ok(RegexBuilder::new(r"^(.*)$")
+        return RegexBuilder::new(r"^(.*)$")
             .dot_matches_new_line(true)
-            .build()?);
+            .build();
     }
     name = name.split_whitespace().collect::<Vec<&str>>().join(" ");
     let escaped_name = escape(name.as_str());
     let pattern = format!(r"^{}(?:\s+(.*))?$", escaped_name);
-    Ok(RegexBuilder::new(pattern.as_str())
+    RegexBuilder::new(pattern.as_str())
         .dot_matches_new_line(true)
         .case_insensitive(true)
-        .build()?)
+        .build()
 }

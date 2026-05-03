@@ -9,6 +9,12 @@ pub struct SwiftBots {
     bots: HashMap<String, Arc<BotBox>>,
 }
 
+impl Default for SwiftBots {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SwiftBots {
     pub fn new() -> Self {
         SwiftBots {

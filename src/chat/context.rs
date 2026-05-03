@@ -30,11 +30,11 @@ pub struct ChatContext {
 }
 
 impl ChatContext {
-    pub fn new(send_fn: SenderFunction, error_message: String, unknown_message: String, refuse_message: String) -> Self {
+    pub fn new(send_function: SenderFunction, error_message: String, unknown_message: String, refuse_message: String) -> Self {
         ChatContext {
             sender: "".to_string(),
             orig_message: "".to_string(),
-            send_fn: send_fn,
+            send_fn: send_function,
             error_message: Arc::new(error_message),
             unknown_message: Arc::new(unknown_message),
             refuse_message: Arc::new(refuse_message),

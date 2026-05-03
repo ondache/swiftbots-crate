@@ -53,7 +53,8 @@ impl<TRequest: Send + Sync + 'static> Service<TRequest> for BaseHandler<TRequest
     fn call(&mut self, req: TRequest) -> Self::Future {
         let entry = self.bot_entry.clone();
         Box::pin(async move {
-            Ok(entry(req).await)
+            entry(req).await;
+            Ok(())
         })
     }
 }
