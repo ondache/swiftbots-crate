@@ -34,7 +34,7 @@ impl<TBody> PartialOrd<Self> for CompiledCommand <TBody> {
 
 impl<TBody> Ord for CompiledCommand <TBody> {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.command_len.cmp(&self.command_len)
+        self.command_len.cmp(&other.command_len)
     }
 }
 
@@ -91,9 +91,12 @@ pub fn search_token_trie<'a, TBody>(trie: &'a TokenTrie<TBody>, text: &'a str) -
         }
         match splitted.next() {
             Some(word) => {
-                current = match trie.get(word) {
-                    Some(TokenTrieValue::Branch(branch)) => Some(branch),
-                    _ => None,
+                current = match current {
+                    Some(c) => match c.get(word) {
+                        Some(TokenTrieValue::Branch(branch)) => Some(branch),
+                        _ => None,
+                    },
+                    None => None,
                 }
             }
             None => {
