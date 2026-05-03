@@ -10,6 +10,7 @@ pub enum SwiftBotsError {
     BotHasNoListener(String),
     BotHasNoSender(String),
     BotHasNoHandler(String),
+    InvalidCommand(String, String),
 }
 
 impl Display for SwiftBotsError {
@@ -19,6 +20,7 @@ impl Display for SwiftBotsError {
             SwiftBotsError::BotHasNoListener(name) => write!(f, "Bot '{name}' has no listener"),
             SwiftBotsError::BotHasNoSender(name) => write!(f, "Bot '{name}' has no sender"),
             SwiftBotsError::BotHasNoHandler(name) => write!(f, "Bot '{name}' has no handler"),
+            SwiftBotsError::InvalidCommand(name, command) => write!(f, "Invalid command '{command}' for bot '{name}'"),
         }
     }
 }

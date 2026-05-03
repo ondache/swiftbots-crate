@@ -15,3 +15,7 @@ pub use crate::basic::bot::BasicBot;
 
 #[cfg(feature = "chat")]
 pub mod chat;
+#[cfg(feature = "chat")]
+pub use crate::chat::bot::ChatBot;
+#[cfg(feature = "chat")]
+pub use crate::chat::context::new_request;
