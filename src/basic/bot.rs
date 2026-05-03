@@ -24,9 +24,9 @@ pub struct BasicBot <TRequest> {
 impl <TRequest> BasicBot<TRequest>
 where TRequest: Send + Sync + 'static
 {
-    pub fn new(name: String) -> Self {
+    pub fn new(name: &str) -> Self {
         BasicBot {
-            name,
+            name: name.to_string(),
             run_at_startup: true,
             listener_entry: None,
             handler_entry: None,

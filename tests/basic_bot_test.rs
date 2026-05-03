@@ -7,7 +7,7 @@ use swiftbots::types::SwiftBotsError;
 async fn base_handler_test() -> Result<(), SwiftBotsError>{
     let (result_tx, mut result_rx) = channel(1);
 
-    let bot = BasicBot::new("test".to_string())
+    let bot = BasicBot::new("test")
         .listener(async move |tx| {
             let message = "Test Value 1".to_string();
             tx.send(message).unwrap();

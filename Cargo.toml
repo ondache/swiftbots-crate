@@ -7,19 +7,25 @@ edition = "2024"
 tokio = { version = "1.52.1", features = ["sync", "rt"] }
 tracing = "0.1.44"
 tower = { version = "0.5.3", optional = true, features = ["util"] }
+http = { version = "1.4.0", optional = true }
+regex = { version = "1", optional = true }
 
 [dev-dependencies]
-http = "1.4.0"
-serde_json = "1.0.149"
 tokio = { version = "1.52.1", features = ["macros", "rt-multi-thread", "io-std", "io-util"] }
 tracing-subscriber = "0.3.23"
+serde_json = "1.0.149"
 
 [features]
 default = []
 
 middleware = []
 basic = ["middleware", "dep:tower"]
-chat = ["middleware", "dep:tower"]
+chat = [
+    "middleware",
+    "dep:tower",
+    "dep:http",
+    "dep:regex"
+]
 
 full = [
     "basic",

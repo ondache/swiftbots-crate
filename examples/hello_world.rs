@@ -1,23 +1,19 @@
 use swiftbots::{BasicBot, SwiftBots};
 use tokio;
 use tokio::io::{AsyncBufReadExt, BufReader};
-use serde_json::json;
-use http::Request;
 use swiftbots::types::SwiftBotsError;
 
 #[tokio::main]
 async fn main() -> Result<(), SwiftBotsError>{
-    let bot = BasicBot::new("console bot".to_string())
+    let bot = BasicBot::new("console bot")
         .listener(async |tx| {
             loop {
                 let message = read_line().await;
-                tx.send(Request::new(
-                    json!({"message": message}),
-                )).unwrap();
+                tx.send(message).unwrap();
             }
         })
         .handler(async |req| {
-            println!("Received message: {}", req.body()["message"]);
+            println!("Received message: {}", req);
         });
 
     println!("Welcome to the {}! Type anything and press enter:", bot.name);
