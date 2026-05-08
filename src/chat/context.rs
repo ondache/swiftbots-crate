@@ -16,21 +16,21 @@ pub struct SenderMeta {
 #[derive(Clone)]
 pub struct RoutingMeta<TBody> {
     pub arguments: String,
-    pub handler: MessageHandlerFunction<Request<TBody>>,
+    pub handler: Arc<MessageHandlerFunction<Request<TBody>>>,
 }
 
 #[derive(Clone)]
 pub struct ChatContext {
     pub sender: String,
     pub orig_message: String,
-    send_fn: SenderFunction,
+    send_fn: Arc<SenderFunction>,
     error_message: Arc<String>,
     unknown_message: Arc<String>,
     refuse_message: Arc<String>,
 }
 
 impl ChatContext {
-    pub fn new(send_function: SenderFunction, error_message: String, unknown_message: String, refuse_message: String) -> Self {
+    pub fn new(send_function: Arc<SenderFunction>, error_message: String, unknown_message: String, refuse_message: String) -> Self {
         ChatContext {
             sender: "".to_string(),
             orig_message: "".to_string(),

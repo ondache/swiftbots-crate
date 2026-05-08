@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 use regex::{Regex, RegexBuilder, escape, Error};
 use crate::chat::types::{ChatCommand, MessageHandlerFunction};
 use std::collections::{BinaryHeap, HashMap};
+use std::sync::Arc;
 use http::Request;
 
 pub enum TokenTrieValue <TBody> {
@@ -14,7 +15,7 @@ pub type TokenTrie <TBody> = HashMap<String, TokenTrieValue<TBody>>;
 pub struct CompiledCommand <TBody> {
     pub re_command: Regex,
     pub command_name: String,
-    pub handler_entry: MessageHandlerFunction<Request<TBody>>,
+    pub handler_entry: Arc<MessageHandlerFunction<Request<TBody>>>,
     pub command_len: usize
 }
 

@@ -54,7 +54,7 @@ async fn main() -> Result<(), SwiftBotsError> {
             println!("{}", ctx.message)
         });
 
-    println!("Welcome to the {}!", bot.name);
+    println!("Welcome to the chat bot!");
     println!("Type expression to solve like `+ 2 2` or `- 70 1`");
     SwiftBots::new()
         .add_bot(bot.build()?)?

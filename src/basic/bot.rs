@@ -15,10 +15,7 @@ use crate::middleware::{
 use crate::bot::BotBox;
 
 pub struct BasicBot <TRequest> {
-    pub name: String,
-    pub run_at_startup: bool,
-    listener_entry: Option<ListenerFunction<TRequest>>,
-    handler_entry: Option<HandlerFunction<TRequest>>,
+    core: BasicBotCore<TRequest>
 }
 
 impl <TRequest> BasicBot<TRequest>
@@ -26,11 +23,18 @@ where TRequest: Send + Sync + 'static
 {
     pub fn new(name: &str) -> Self {
         BasicBot {
-            name: name.to_string(),
-            run_at_startup: true,
-            listener_entry: None,
-            handler_entry: None,
+            core: BasicBotCore {
+                name: Arc::new(name.to_string()),
+                run_at_startup: true,
+                listener_entry: None,
+                handler_entry: None,
+            }
         }
+    }
+
+    pub fn run_at_startup(mut self, run_at_startup: bool) -> Self {
+        self.core.run_at_startup = run_at_startup;
+        self
     }
 
     pub fn listener<F, Fut>(mut self, listener_func: F) -> Self
@@ -38,9 +42,7 @@ where TRequest: Send + Sync + 'static
         F: Fn(UnboundedSender<TRequest>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + 'static
     {
-        self.listener_entry = Some(Arc::new(move |tx| {
-            Box::pin(listener_func(tx))
-        }));
+        self.core.set_listener(listener_func);
         self
     }
 
@@ -49,28 +51,26 @@ where TRequest: Send + Sync + 'static
         F: Fn(TRequest) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + 'static
     {
-        self.handler_entry = Some(Arc::new(move |ctx| {
-            Box::pin(handler_func(ctx))
-        }));
+        self.core.set_handler(handler_func);
         self
     }
 
     pub fn build(self) -> Result<Arc<BotBox>, SwiftBotsError> {
-        let name = Arc::new(self.name);
-        let run_at_startup = self.run_at_startup;
+        let core = self.core;
+        let name = core.name;
+        let run_at_startup = core.run_at_startup;
         debug!("Building bot: '{}'", name);
-        let listener_entry = self
+        let listener_entry = core
             .listener_entry
             .ok_or_else(|| SwiftBotsError::BotHasNoListener(name.to_string()))?;
-        let handler_entry = self
+        let handler_entry = core
             .handler_entry
             .ok_or_else(|| SwiftBotsError::BotHasNoHandler(name.to_string()))?;
         let base_handler = BaseHandler::<TRequest> { bot_entry: handler_entry };
         let service = ServiceBuilder::new()
-            // .layer(LoggingLayer)
             .service(EntryService { inner: base_handler })
             .boxed_clone();
-        let service_task_factory = Self::get_service_tasks(
+        let service_task_factory = BasicBotCore::get_service_tasks(
             name.clone(),
             service,
             listener_entry,
@@ -83,11 +83,41 @@ where TRequest: Send + Sync + 'static
             onetime_handles: Vec::new(),
         }))
     }
+}
 
-    fn get_service_tasks(
+pub struct BasicBotCore<TRequest> {
+    pub name: Arc<String>,
+    pub run_at_startup: bool,
+    pub listener_entry: Option<Arc<ListenerFunction<TRequest>>>,
+    pub handler_entry: Option<Arc<HandlerFunction<TRequest>>>,
+}
+
+impl <TRequest> BasicBotCore<TRequest>
+where TRequest: Send + Sync + 'static {
+    pub fn set_listener<F, Fut>(&mut self, listener_func: F)
+    where
+        F: Fn(UnboundedSender<TRequest>) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = ()> + Send + 'static
+    {
+        self.listener_entry = Some(Arc::new(move |tx| {
+            Box::pin(listener_func(tx))
+        }));
+    }
+
+    pub fn set_handler<F, Fut>(&mut self, handler_func: F)
+    where
+        F: Fn(TRequest) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = ()> + Send + 'static
+    {
+        self.handler_entry = Some(Arc::new(move |ctx| {
+            Box::pin(handler_func(ctx))
+        }));
+    }
+
+    pub fn get_service_tasks(
         name: Arc<String>,
         service: BoxCloneService<TRequest, (), BoxError>,
-        listener_entry: ListenerFunction<TRequest>,
+        listener_entry: Arc<ListenerFunction<TRequest>>,
     ) -> Arc<dyn Fn() -> Vec<BoxFuture<()>> + 'static> {
         info!("get_service_tasks");
         let generator = move || {
@@ -100,7 +130,7 @@ where TRequest: Send + Sync + 'static
         Arc::new(generator)
     }
 
-    fn get_awaitable_handler(
+    pub fn get_awaitable_handler(
         name: Arc<String>,
         service: BoxCloneService<TRequest, (), BoxError>,
         mut rx: UnboundedReceiver<TRequest>

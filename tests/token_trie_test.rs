@@ -3,7 +3,7 @@ use swiftbots::chat::routing::{TokenTrie, CompiledCommand, insert_token_trie, se
 use swiftbots::chat::types::MessageHandlerFunction;
 use http::Request;
 
-fn mock_handler() -> MessageHandlerFunction<Request<()>> {
+fn mock_handler() -> Arc<MessageHandlerFunction<Request<()>>> {
     Arc::new(|_, _| {
         Box::pin(async move {
             ()

@@ -16,7 +16,7 @@ async fn main() -> Result<(), SwiftBotsError>{
             println!("Received message: {}", req);
         });
 
-    println!("Welcome to the {}! Type anything and press enter:", bot.name);
+    println!("Welcome to the console bot! Type anything and press enter:");
     SwiftBots::new()
         .add_bot(bot.build()?)?
         .run()

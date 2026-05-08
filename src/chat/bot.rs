@@ -1,43 +1,54 @@
 use std::sync::Arc;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
-use tower::{BoxError, ServiceBuilder, ServiceExt, Service};
-use tower::util::BoxCloneService;
+use tokio::sync::mpsc::UnboundedSender;
+use tower::{ServiceBuilder, ServiceExt};
 use http::Request;
-use tracing::{debug, info};
+use tracing::debug;
 use crate::bot::BotBox;
-use crate::chat::types::{ListenerFunction, SenderFunction, ChatCommand};
+use crate::chat::types::{SenderFunction, ChatCommand};
 use crate::chat::context::{ChatContext, RoutingMeta, SendFnContext};
-use crate::chat::routing::{build_token_trie};
+use crate::chat::routing::build_token_trie;
 use crate::middleware::{BaseHandler, EntryService};
 use crate::chat::middleware::{RoutingLayer, ChatContextLayer};
-use crate::types::{BoxFuture, SwiftBotsError};
+use crate::types::SwiftBotsError;
 use crate::chat::handlers::chat_handler_extractor;
 use serde_json::Value as JsonValue;
+use crate::basic::bot::BasicBotCore;
 
 pub struct ChatBot <TBody> {
-    pub name: String,
-    pub run_at_startup: bool,
-    pub error_message: String,
-    pub unknown_message: String,
-    pub refuse_message: String,
-    listener_entry: Option<ListenerFunction<Request<TBody>>>,
-    sender_entry: Option<SenderFunction>,
-    message_handlers: Vec<ChatCommand<Request<TBody>>>,
+    core: BasicBotCore<Request<TBody>>,
+    chat_core: ChatCore<TBody>,
+
+    pub error_message: Option<String>,
+    pub unknown_message: Option<String>,
+    pub refuse_message: Option<String>,
 }
 
 
 impl <TBody: BodyTransform> ChatBot <TBody> {
     pub fn new(name: &str) -> Self {
         ChatBot {
-            name: name.to_string(),
-            run_at_startup: true,
-            listener_entry: None,
-            sender_entry: None,
-            message_handlers: vec![],
-            error_message: "Error while processing your request".to_string(),
-            unknown_message: "Unknown command".to_string(),
-            refuse_message: "You are not allowed to use this command".to_string(),
+            core: BasicBotCore {
+                name: Arc::new(name.to_string()),
+                run_at_startup: true,
+                listener_entry: None,
+                handler_entry: Some(chat_handler_extractor(TBody::transform_body)),
+            },
+            chat_core: ChatCore {
+                sender_entry: None,
+                message_handlers: vec![],
+                error_message: "Error while processing your request".to_string(),
+                unknown_message: "Unknown command".to_string(),
+                refuse_message: "You are not allowed to use this command".to_string(),
+            },
+            error_message: None,
+            unknown_message: None,
+            refuse_message: None,
         }
+    }
+
+    pub fn run_at_startup(mut self, run_at_startup: bool) -> Self {
+        self.core.run_at_startup = run_at_startup;
+        self
     }
 
     pub fn listener<F, Fut>(mut self, listener_func: F) -> Self
@@ -45,9 +56,7 @@ impl <TBody: BodyTransform> ChatBot <TBody> {
         F: Fn(UnboundedSender<Request<TBody>>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + 'static
     {
-        self.listener_entry = Some(Arc::new(move |tx| {
-            Box::pin(listener_func(tx))
-        }));
+        self.core.set_listener(listener_func);
         self
     }
 
@@ -56,9 +65,7 @@ impl <TBody: BodyTransform> ChatBot <TBody> {
         F: Fn(SendFnContext) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + 'static
     {
-        self.sender_entry = Some(Arc::new(move |ctx| {
-            Box::pin(sender_func(ctx))
-        }));
+        self.chat_core.set_sender(sender_func);
         self
     }
 
@@ -67,13 +74,7 @@ impl <TBody: BodyTransform> ChatBot <TBody> {
         F: Fn(Request<TBody>, ChatContext) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + 'static
     {
-        let command = ChatCommand {
-            commands: commands.into_iter().map(|s| s.to_string()).collect(),
-            callback: Arc::new(move |req, ctx| {
-                Box::pin(handler_func(req, ctx))
-            })
-        };
-        self.message_handlers.push(command);
+        self.chat_core.append_message_handler(commands, handler_func);
         self
     }
 
@@ -82,40 +83,37 @@ impl <TBody: BodyTransform> ChatBot <TBody> {
         F: Fn(Request<TBody>, ChatContext) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + 'static
     {
-        let command = ChatCommand {
-            commands: vec!["".to_string()],
-            callback: Arc::new(move |req, ctx| {
-                Box::pin(handler_func(req, ctx))
-            })
-        };
-        self.message_handlers.push(command);
+        self.chat_core.append_message_handler(vec![""], handler_func);
         self
     }
 
     pub fn build(self) -> Result<Arc<BotBox>, SwiftBotsError> {
-        let name = Arc::new(self.name.clone());
-        let run_at_startup = self.run_at_startup;
+        let core = self.core;
+        let name = core.name.clone();
+        let run_at_startup = core.run_at_startup;
         debug!("Building bot: {}", name);
-        let listener_entry = self
-            .listener_entry.as_ref()
+        let listener_entry = core
+            .listener_entry
+            .as_ref()
             .ok_or_else(|| SwiftBotsError::BotHasNoListener(name.to_string()))?
             .clone();
-        let sender_entry = self
+        let sender_entry = self.chat_core
             .sender_entry.as_ref()
             .ok_or_else(|| SwiftBotsError::BotHasNoSender(name.to_string()))?
             .clone();
-        let chat_context_template = self.make_chat_context(sender_entry.clone());
-        let token_trie = build_token_trie(self.message_handlers)
+        let chat_context_template = self.chat_core.make_chat_context(sender_entry.clone());
+        let token_trie = build_token_trie(self.chat_core.message_handlers)
             .map_err(|e| SwiftBotsError::InvalidCommand(name.to_string(), e.to_string()))?;
-        let base_handler = BaseHandler::<Request<TBody>> {
-            bot_entry: chat_handler_extractor(TBody::transform_body)
-        };
+        let handler_entry = core
+            .handler_entry
+            .ok_or_else(|| SwiftBotsError::BotHasNoHandler(name.to_string()))?;
+        let base_handler = BaseHandler::<Request<TBody>> { bot_entry: handler_entry };
         let service = ServiceBuilder::new()
             .layer(ChatContextLayer{ctx_template: chat_context_template})
             .layer(RoutingLayer{trie: Arc::new(token_trie)})
             .service(EntryService { inner: base_handler })
             .boxed_clone();
-        let service_task_factory = Self::get_service_tasks(
+        let service_task_factory = BasicBotCore::get_service_tasks(
             name.clone(),
             service,
             listener_entry,
@@ -128,45 +126,42 @@ impl <TBody: BodyTransform> ChatBot <TBody> {
             onetime_handles: vec![],
         }))
     }
+}
 
-    fn get_service_tasks(
-        name: Arc<String>,
-        service: BoxCloneService<Request<TBody>, (), BoxError>,
-        listener_entry: ListenerFunction<Request<TBody>>,
-    ) -> Arc<dyn Fn() -> Vec<BoxFuture<()>> + 'static> {
-        info!("get_service_tasks");
-        let generator = move || {
-            let (tx, rx) = unbounded_channel::<Request<TBody>>();
-            let mut tasks: Vec<BoxFuture<()>> = vec![];
-            tasks.push(Self::get_awaitable_handler(name.clone(), service.clone(), rx));
-            tasks.push(listener_entry.clone()(tx));
-            tasks
+pub struct ChatCore <TBody> {
+    pub error_message: String,
+    pub unknown_message: String,
+    pub refuse_message: String,
+    pub sender_entry: Option<Arc<SenderFunction>>,
+    pub message_handlers: Vec<ChatCommand<Request<TBody>>>,
+}
+
+impl <TBody: BodyTransform> ChatCore <TBody> {
+    pub fn set_sender<F, Fut>(&mut self, sender_func: F)
+    where
+        F: Fn(SendFnContext) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = ()> + Send + 'static
+    {
+        self.sender_entry = Some(Arc::new(move |ctx| {
+            Box::pin(sender_func(ctx))
+        }));
+    }
+
+    pub fn append_message_handler<F, Fut>(&mut self, commands: Vec<&str>, handler_func: F)
+    where
+        F: Fn(Request<TBody>, ChatContext) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = ()> + Send + 'static
+    {
+        let command = ChatCommand {
+            commands: commands.into_iter().map(|s| s.to_string()).collect(),
+            callback: Arc::new(move |req, ctx| {
+                Box::pin(handler_func(req, ctx))
+            })
         };
-        Arc::new(generator)
+        self.message_handlers.push(command);
     }
 
-    fn get_awaitable_handler(
-        name: Arc<String>,
-        service: BoxCloneService<Request<TBody>, (), BoxError>,
-        mut rx: UnboundedReceiver<Request<TBody>>
-    ) -> BoxFuture<()> {
-        Box::pin(
-            async move {
-                loop {
-                    if let Some(request) = rx.recv().await {
-                        debug!("Bot '{}' received request", name);
-                        let mut service = service.clone();
-                        tokio::spawn(service.call(request));
-                    } else {
-                        info!("Bot '{}' is stopped", name);
-                        break;
-                    }
-                }
-            }
-        )
-    }
-
-    fn make_chat_context(&self, sender_entry: SenderFunction) -> ChatContext {
+    pub fn make_chat_context(&self, sender_entry: Arc<SenderFunction>) -> ChatContext {
         ChatContext::new(
             sender_entry.clone(),
             self.error_message.clone(),
