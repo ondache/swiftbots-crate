@@ -58,7 +58,6 @@ where TRequest: Send + Sync + 'static
     pub fn build(self) -> Result<Arc<BotBox>, SwiftBotsError> {
         let core = self.core;
         let name = core.name;
-        let run_at_startup = core.run_at_startup;
         debug!("Building bot: '{}'", name);
         let listener_entry = core
             .listener_entry
@@ -76,7 +75,7 @@ where TRequest: Send + Sync + 'static
             listener_entry,
         );
         Ok(Arc::new(BotBox {
-            enabled: run_at_startup,
+            enabled: core.run_at_startup,
             name,
             service_task_factory,
             service_handles: Vec::new(),
