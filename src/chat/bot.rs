@@ -89,20 +89,23 @@ impl <TBody: BodyTransform> ChatBot <TBody> {
 
     pub fn build(self) -> Result<Arc<BotBox>, SwiftBotsError> {
         let core = self.core;
+        let mut chat_core = self.chat_core;
         let name = core.name.clone();
-        let run_at_startup = core.run_at_startup;
+        chat_core.error_message = self.error_message.unwrap_or(chat_core.error_message);
+        chat_core.refuse_message = self.refuse_message.unwrap_or(chat_core.refuse_message);
+        chat_core.unknown_message = self.unknown_message.unwrap_or(chat_core.unknown_message);
         debug!("Building bot: {}", name);
         let listener_entry = core
             .listener_entry
             .as_ref()
             .ok_or_else(|| SwiftBotsError::BotHasNoListener(name.to_string()))?
             .clone();
-        let sender_entry = self.chat_core
+        let sender_entry = chat_core
             .sender_entry.as_ref()
             .ok_or_else(|| SwiftBotsError::BotHasNoSender(name.to_string()))?
             .clone();
-        let chat_context_template = self.chat_core.make_chat_context(sender_entry.clone());
-        let token_trie = build_token_trie(self.chat_core.message_handlers)
+        let chat_context_template = chat_core.make_chat_context(sender_entry.clone());
+        let token_trie = build_token_trie(chat_core.message_handlers)
             .map_err(|e| SwiftBotsError::InvalidCommand(name.to_string(), e.to_string()))?;
         let handler_entry = core
             .handler_entry
@@ -119,7 +122,7 @@ impl <TBody: BodyTransform> ChatBot <TBody> {
             listener_entry,
         );
         Ok(Arc::new(BotBox {
-            enabled: run_at_startup,
+            enabled: core.run_at_startup,
             name,
             service_task_factory,
             service_handles: vec![],
