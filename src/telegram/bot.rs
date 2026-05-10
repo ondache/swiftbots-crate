@@ -218,7 +218,7 @@ impl TelegramCore {
         loop {
             tracing::Span::current().record(
                 "retry_attempt",
-                &retry_counter,
+                retry_counter,
             );
             let builder_for_this_run = if let Some(builder) = current_builder.take() {
                 if let Some(cloned) = builder.try_clone() {
@@ -233,9 +233,9 @@ impl TelegramCore {
                 .send()
                 .await
                 .map_err(|e| SwiftBotsError::HttpError(e.to_string()));
-            let response;
-            match post_result {
-                Ok(res) => response = res,
+            
+            let response = match post_result {
+                Ok(res) => res,
                 Err(error) => {
                     if retry_counter >= max_retries {
                         warn!("TG API error with 200. Giving up on {} attempt", max_retries);
@@ -248,7 +248,7 @@ impl TelegramCore {
                     retry_counter += 1;
                     continue;
                 }
-            }
+            };
             debug!("TG API response status: {}", response.status());
             tracing::Span::current().record(
                 "response_code",

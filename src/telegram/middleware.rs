@@ -36,7 +36,7 @@ where
         let message = update["message"].as_object().unwrap_or_else(|| {
             panic!("Update is not a message: {}", update);
         });
-        let sender = message["from"]["id"].as_u64().expect(format!("Unexpected format {}", update).as_str());
+        let sender = message["from"]["id"].as_u64().unwrap_or_else(|| panic!("Unexpected format {}", update));
         let username: Option<&str> = message["from"]["username"].as_str();
         let text = message["text"].as_str().unwrap_or("");
         info!("Got message from {} ({})", sender, username.unwrap_or("unknown"));
