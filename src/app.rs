@@ -3,7 +3,7 @@ use crate::bot::BotBox;
 use crate::runner::TaskRunner;
 use crate::types::{SwiftBotsError};
 use std::sync::Arc;
-use tracing::{info, warn};
+use tracing::{info, error};
 
 pub struct SwiftBots {
     bots: HashMap<String, Arc<BotBox>>,
@@ -34,8 +34,7 @@ impl SwiftBots {
 
     pub async fn run(self) {
         if self.bots.is_empty() {
-            let message = "No bots to run";
-            warn!("{}", message);
+            error!("No bots to run");
             return;
         }
         info!("Starting SwiftBots application with {} bots", self.bots.len());
