@@ -2,8 +2,8 @@ use std::sync::Arc;
 use tokio::sync::mpsc::UnboundedSender;
 use tower::{ServiceBuilder, ServiceExt};
 use http::Request;
-use tracing::debug;
-use crate::bot::BotBox;
+use tracing::{debug, trace};
+use crate::bot::{BotBox, OneshotBot};
 use crate::chat::types::{SenderFunction, ChatCommand};
 use crate::chat::context::{ChatContext, RoutingMeta, SendFnContext};
 use crate::chat::routing::build_token_trie;
@@ -128,6 +128,36 @@ impl <TBody: BodyTransform> ChatBot <TBody> {
             service_handles: vec![],
             onetime_handles: vec![],
         }))
+    }
+
+    pub fn build_oneshot(self) -> Result<OneshotBot<Request<TBody>>, SwiftBotsError> {
+        trace!("ChatBot:build_oneshot");
+        let core = self.core;
+        let mut chat_core = self.chat_core;
+        let name = core.name.clone();
+        chat_core.error_message = self.error_message.unwrap_or(chat_core.error_message);
+        chat_core.refuse_message = self.refuse_message.unwrap_or(chat_core.refuse_message);
+        chat_core.unknown_message = self.unknown_message.unwrap_or(chat_core.unknown_message);
+        let sender_entry = chat_core
+            .sender_entry.as_ref()
+            .ok_or_else(|| SwiftBotsError::BotHasNoSender(name.to_string()))?
+            .clone();
+        let chat_context_template = chat_core.make_chat_context(sender_entry.clone());
+        let token_trie = build_token_trie(chat_core.message_handlers)
+            .map_err(|e| SwiftBotsError::InvalidCommand(name.to_string(), e.to_string()))?;
+        let handler_entry = core
+            .handler_entry
+            .ok_or_else(|| SwiftBotsError::BotHasNoHandler(name.to_string()))?;
+        let base_handler = BaseHandler::<Request<TBody>> { bot_entry: handler_entry };
+        let service = ServiceBuilder::new()
+            .layer(ChatContextLayer{ctx_template: chat_context_template})
+            .layer(RoutingLayer{trie: Arc::new(token_trie)})
+            .service(EntryService { inner: base_handler })
+            .boxed_clone();
+        Ok(OneshotBot{
+            name: name,
+            service: service,
+        })
     }
 }
 

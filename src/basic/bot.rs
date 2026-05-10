@@ -12,7 +12,7 @@ use crate::middleware::{
     BaseHandler,
     EntryService,
 };
-use crate::bot::BotBox;
+use crate::bot::{BotBox, OneshotBot};
 
 pub struct BasicBot <TRequest> {
     core: BasicBotCore<TRequest>
@@ -81,6 +81,22 @@ where TRequest: Send + Sync + 'static
             service_handles: Vec::new(),
             onetime_handles: Vec::new(),
         }))
+    }
+
+    pub fn build_oneshot(self) -> Result<OneshotBot<TRequest>, SwiftBotsError> {
+        trace!("BasicBot:build_oneshot");
+        let core = &self.core;
+        let handler_entry = core
+            .handler_entry.clone()
+            .ok_or_else(|| SwiftBotsError::BotHasNoHandler(core.name.to_string()))?;
+        let base_handler = BaseHandler::<TRequest> { bot_entry: handler_entry };
+        let service = ServiceBuilder::new()
+            .service(EntryService { inner: base_handler })
+            .boxed_clone();
+        Ok(OneshotBot {
+            name: core.name.clone(),
+            service,
+        })
     }
 }
 

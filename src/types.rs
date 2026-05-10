@@ -12,6 +12,7 @@ pub enum SwiftBotsError {
     BotHasNoHandler(String),
     InvalidCommand(String, String),
     HttpError(String),
+    ServiceCallError(Box<dyn std::error::Error + Send + Sync>),
 }
 
 impl Display for SwiftBotsError {
@@ -23,6 +24,7 @@ impl Display for SwiftBotsError {
             SwiftBotsError::BotHasNoHandler(name) => write!(f, "Bot '{name}' has no handler"),
             SwiftBotsError::InvalidCommand(name, command) => write!(f, "Invalid command '{command}' for bot '{name}'"),
             SwiftBotsError::HttpError(error) => write!(f, "HTTP error: {error}"),
+            SwiftBotsError::ServiceCallError(error) => write!(f, "Service call error: {}", error),
         }
     }
 }
