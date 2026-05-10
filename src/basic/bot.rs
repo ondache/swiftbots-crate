@@ -8,7 +8,7 @@ use tracing::{debug, info, trace};
 
 use crate::types::{BoxFuture, SwiftBotsError};
 use crate::basic::types::{ListenerFunction, HandlerFunction};
-use crate::middleware::{
+use crate::basic::middleware::{
     BaseHandler,
     EntryService,
 };

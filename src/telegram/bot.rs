@@ -14,7 +14,7 @@ use crate::chat::context::{ChatContext, SendFnContext};
 use crate::chat::routing::build_token_trie;
 use crate::chat::bot::{BodyTransform, ChatCore};
 use crate::chat::middleware::{RoutingLayer, ChatContextLayer};
-use crate::middleware::{BaseHandler, EntryService};
+use crate::basic::middleware::{BaseHandler, EntryService};
 use crate::types::SwiftBotsError;
 use crate::chat::handlers::chat_handler_extractor;
 use crate::telegram::context::UpdateMeta;

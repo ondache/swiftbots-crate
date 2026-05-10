@@ -7,7 +7,7 @@ use crate::bot::{BotBox, OneshotBot};
 use crate::chat::types::{SenderFunction, ChatCommand};
 use crate::chat::context::{ChatContext, RoutingMeta, SendFnContext};
 use crate::chat::routing::build_token_trie;
-use crate::middleware::{BaseHandler, EntryService};
+use crate::basic::middleware::{BaseHandler, EntryService};
 use crate::chat::middleware::{RoutingLayer, ChatContextLayer};
 use crate::types::SwiftBotsError;
 use crate::chat::handlers::chat_handler_extractor;

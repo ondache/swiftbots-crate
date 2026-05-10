@@ -20,9 +20,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 [features]
 default = []
 
-middleware = []
 basic = [
-    "middleware",
     "dep:tower",
 ]
 chat = [
@@ -41,7 +39,6 @@ telegram = [
 full = [
     "basic",
     "chat",
-    "middleware",
     "telegram",
 ]
 

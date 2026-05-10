@@ -7,8 +7,6 @@ pub mod utils;
 pub use crate::app::SwiftBots;
 pub use crate::bot::run_once;
 
-#[cfg(feature = "middleware")]
-pub mod middleware;
 #[cfg(feature = "basic")]
 pub mod basic;
 #[cfg(feature = "basic")]
