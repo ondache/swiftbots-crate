@@ -60,3 +60,6 @@ required-features = ["telegram"]
 [[example]]
 name = "oneshot"
 required-features = ["basic"]
+
+[lints.clippy]
+redundant_field_names = "allow"
