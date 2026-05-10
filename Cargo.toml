@@ -63,3 +63,4 @@ required-features = ["basic"]
 
 [lints.clippy]
 redundant_field_names = "allow"
+needless_return = "allow"
