@@ -4,7 +4,7 @@ use std::future::Future;
 use tokio::sync::mpsc::{UnboundedSender, unbounded_channel, UnboundedReceiver};
 use tower::{ServiceBuilder, BoxError, ServiceExt, Service};
 use tower::util::BoxCloneService;
-use tracing::{debug, info};
+use tracing::{debug, info, trace};
 
 use crate::types::{BoxFuture, SwiftBotsError};
 use crate::basic::types::{ListenerFunction, HandlerFunction};
@@ -118,7 +118,7 @@ where TRequest: Send + Sync + 'static {
         service: BoxCloneService<TRequest, (), BoxError>,
         listener_entry: Arc<ListenerFunction<TRequest>>,
     ) -> Arc<dyn Fn() -> Vec<BoxFuture<()>> + 'static> {
-        info!("get_service_tasks");
+        trace!("get_service_tasks");
         let generator = move || {
             let (tx, rx) = unbounded_channel::<TRequest>();
             let mut tasks: Vec<BoxFuture<()>> = Vec::new();

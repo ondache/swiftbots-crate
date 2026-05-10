@@ -4,8 +4,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 use std::sync::Arc;
 use tower::{BoxError, Service};
-
-
+use tracing::trace;
 // static TRACE_ID_SEED: AtomicU64 = AtomicU64::new(1);
 // static CORRELATION_ID_SEED: AtomicU64 = AtomicU64::new(2);
 // 
@@ -51,9 +50,11 @@ impl<TRequest: Send + Sync + 'static> Service<TRequest> for BaseHandler<TRequest
     }
 
     fn call(&mut self, req: TRequest) -> Self::Future {
+        trace!("BaseHandler::call");
         let entry = self.bot_entry.clone();
         Box::pin(async move {
             entry(req).await;
+            trace!("BaseHandler::finish");
             Ok(())
         })
     }
@@ -79,6 +80,7 @@ where
     }
 
     fn call(&mut self, req: TRequest) -> Self::Future {
+        trace!("EntryService::call");
         let fut = self.inner.call(req);
         Box::pin(async move {
             fut.await.map_err(Into::into)

@@ -19,3 +19,8 @@ pub mod chat;
 pub use crate::chat::bot::ChatBot;
 #[cfg(feature = "chat")]
 pub use crate::chat::context::new_request;
+
+#[cfg(feature = "telegram")]
+pub mod telegram;
+#[cfg(feature = "telegram")]
+pub use crate::telegram::bot::TelegramBot;

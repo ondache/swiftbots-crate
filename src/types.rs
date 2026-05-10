@@ -11,6 +11,7 @@ pub enum SwiftBotsError {
     BotHasNoSender(String),
     BotHasNoHandler(String),
     InvalidCommand(String, String),
+    HttpError(String),
 }
 
 impl Display for SwiftBotsError {
@@ -21,6 +22,7 @@ impl Display for SwiftBotsError {
             SwiftBotsError::BotHasNoSender(name) => write!(f, "Bot '{name}' has no sender"),
             SwiftBotsError::BotHasNoHandler(name) => write!(f, "Bot '{name}' has no handler"),
             SwiftBotsError::InvalidCommand(name, command) => write!(f, "Invalid command '{command}' for bot '{name}'"),
+            SwiftBotsError::HttpError(error) => write!(f, "HTTP error: {error}"),
         }
     }
 }

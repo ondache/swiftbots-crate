@@ -4,3 +4,4 @@
 - custom middlewares interface
 - make whitelisted and blacklisted users configurable
 - update onetime_handles
+- update task runner with shutdown and start bots actions

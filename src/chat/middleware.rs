@@ -3,6 +3,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 use http::Request;
+use tracing::trace;
 use crate::chat::context::{ChatContext, RoutingMeta, SenderMeta};
 use crate::chat::routing::{TokenTrie, search_matched_commands};
 
@@ -28,6 +29,7 @@ where
     }
 
     fn call(&mut self, mut req: Request<TBody>) -> Self::Future {
+        trace!("RoutingMiddleware::call");
         let chat_ctx: ChatContext;
         if let Some(ctx) = req.extensions().get::<ChatContext>() {
             chat_ctx = ctx.clone();
@@ -57,7 +59,9 @@ where
 
                         let fut = self.inner.call(req);
                         return Box::pin(async move {
-                            fut.await.map_err(Into::into)
+                            let awaited = fut.await.map_err(Into::into);
+                            trace!("RoutingMiddleware::finish");
+                            awaited
                         });
                     }
                     None => {
@@ -109,6 +113,7 @@ where
     }
 
     fn call(&mut self, mut req: Request<TBody>) -> Self::Future {
+        trace!("ChatContextMiddleware::call");
         let mut chat_context = self.ctx_template.clone();
         if let Some(sender_context) = req.extensions().get::<SenderMeta>() {
             chat_context.sender = sender_context.sender.clone();
@@ -123,7 +128,9 @@ where
         }
         let fut = self.inner.call(req);
         Box::pin(async move {
-            fut.await.map_err(Into::into)
+            let awaited = fut.await.map_err(Into::into);
+            trace!("ChatContextMiddleware::finish");
+            awaited
         })
     }
 }
