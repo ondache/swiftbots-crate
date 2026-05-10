@@ -365,8 +365,10 @@ impl TelegramCore {
             "limit": 1,
             "allowed_updates": self.allowed_updates,
         });
-        let mut opts = FetchOptions::default();
-        opts.timeout = Some(Duration::from_secs(TIMEOUT as u64 + 10));
+        let opts = FetchOptions {
+            timeout: Some(Duration::from_secs(TIMEOUT as u64 + 10)),
+            ..Default::default()
+        };
         if self.skip_updates {
             let offset = self.skip_updates().await.unwrap_or_else(|_| panic!("Cannot fetch"));
             debug!("Updates offset {}", offset);

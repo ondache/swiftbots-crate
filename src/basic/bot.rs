@@ -138,9 +138,10 @@ where TRequest: Send + Sync + 'static {
         trace!("get_service_tasks");
         let generator = move || {
             let (tx, rx) = unbounded_channel::<TRequest>();
-            let mut tasks: Vec<BoxFuture<()>> = Vec::new();
-            tasks.push(Self::get_awaitable_handler(name.clone(), service.clone(), rx));
-            tasks.push(listener_entry.clone()(tx));
+            let tasks: Vec<BoxFuture<()>> = vec![
+                Self::get_awaitable_handler(name.clone(), service.clone(), rx),
+                listener_entry.clone()(tx)
+            ];
             tasks
         };
         Arc::new(generator)
