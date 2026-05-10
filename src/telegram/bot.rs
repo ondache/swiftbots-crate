@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::rc::Rc;
 use std::time::Duration;
 use tower::{ServiceBuilder, ServiceExt};
 use http::Request;
@@ -94,7 +95,7 @@ impl TelegramBot {
         self
     }
 
-    pub fn build(self) -> Result<Arc<BotBox>, SwiftBotsError> {
+    pub fn build(self) -> Result<Rc<BotBox>, SwiftBotsError> {
         let core = self.core;
         let mut chat_core = self.chat_core;
         let mut tg_core = self.tg_core;
@@ -126,7 +127,7 @@ impl TelegramBot {
             service,
             listener_entry,
         );
-        Ok(Arc::new(BotBox {
+        Ok(Rc::new(BotBox {
             enabled: core.run_at_startup,
             name,
             service_task_factory,

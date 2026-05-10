@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::rc::Rc;
 use tokio::sync::mpsc::UnboundedSender;
 use tower::{ServiceBuilder, ServiceExt};
 use http::Request;
@@ -87,7 +88,7 @@ impl <TBody: BodyTransform> ChatBot <TBody> {
         self
     }
 
-    pub fn build(self) -> Result<Arc<BotBox>, SwiftBotsError> {
+    pub fn build(self) -> Result<Rc<BotBox>, SwiftBotsError> {
         let core = self.core;
         let mut chat_core = self.chat_core;
         let name = core.name.clone();
@@ -121,7 +122,7 @@ impl <TBody: BodyTransform> ChatBot <TBody> {
             service,
             listener_entry,
         );
-        Ok(Arc::new(BotBox {
+        Ok(Rc::new(BotBox {
             enabled: core.run_at_startup,
             name,
             service_task_factory,

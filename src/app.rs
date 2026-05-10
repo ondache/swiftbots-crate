@@ -2,11 +2,11 @@ use std::collections::HashMap;
 use crate::bot::BotBox;
 use crate::runner::TaskRunner;
 use crate::types::{SwiftBotsError};
-use std::sync::Arc;
+use std::rc::Rc;
 use tracing::{info, error};
 
 pub struct SwiftBots {
-    bots: HashMap<String, Arc<BotBox>>,
+    bots: HashMap<String, Rc<BotBox>>,
 }
 
 impl Default for SwiftBots {
@@ -22,7 +22,7 @@ impl SwiftBots {
         }
     }
 
-    pub fn add_bot(mut self, bot: Arc<BotBox>) -> Result<Self, SwiftBotsError> {
+    pub fn add_bot(mut self, bot: Rc<BotBox>) -> Result<Self, SwiftBotsError> {
         if self.bots.contains_key(bot.name.as_str()) {
             let message = format!("Bot with name {} already exists", bot.name);
             return Err(SwiftBotsError::DuplicateBotName(message));

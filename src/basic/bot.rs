@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::rc::Rc;
 use std::future::Future;
 
 use tokio::sync::mpsc::{UnboundedSender, unbounded_channel, UnboundedReceiver};
@@ -55,7 +56,7 @@ where TRequest: Send + Sync + 'static
         self
     }
 
-    pub fn build(self) -> Result<Arc<BotBox>, SwiftBotsError> {
+    pub fn build(self) -> Result<Rc<BotBox>, SwiftBotsError> {
         let core = self.core;
         let name = core.name;
         debug!("Building bot: '{}'", name);
@@ -74,7 +75,7 @@ where TRequest: Send + Sync + 'static
             service,
             listener_entry,
         );
-        Ok(Arc::new(BotBox {
+        Ok(Rc::new(BotBox {
             enabled: core.run_at_startup,
             name,
             service_task_factory,
