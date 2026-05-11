@@ -1,12 +1,11 @@
 use std::sync::Arc;
 use std::rc::Rc;
-use std::future::Future;
 
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tower::{Service, ServiceBuilder};
 use tracing::{debug, info, trace};
 
-use crate::types::{BoxFuture, SwiftBotsError};
+use crate::types::{BoxFuture, MaybeSendFuture, SwiftBotsError};
 use crate::basic::types::{HandlerFunction, ListenerFunction, OneshotBot};
 use crate::basic::middleware::{box_bot_service, BaseHandler, BotService, EntryService};
 use crate::bot::BotBox;
@@ -37,7 +36,7 @@ where TRequest: Send + Sync + 'static
     pub fn listener<F, Fut>(mut self, listener_func: F) -> Self
     where
         F: Fn(UnboundedSender<TRequest>) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + 'static
+        Fut: MaybeSendFuture<Output = ()> + 'static
     {
         self.core.set_listener(listener_func);
         self
@@ -46,7 +45,7 @@ where TRequest: Send + Sync + 'static
     pub fn handler<F, Fut>(mut self, handler_func: F) -> Self
     where
         F: Fn(TRequest) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + 'static
+        Fut: MaybeSendFuture<Output = ()> + 'static
     {
         self.core.set_handler(handler_func);
         self
@@ -109,7 +108,7 @@ where TRequest: Send + Sync + 'static {
     pub fn set_listener<F, Fut>(&mut self, listener_func: F)
     where
         F: Fn(UnboundedSender<TRequest>) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + 'static
+        Fut: MaybeSendFuture<Output = ()> + 'static
     {
         self.listener_entry = Some(Arc::new(move |tx| {
             Box::pin(listener_func(tx))
@@ -119,7 +118,7 @@ where TRequest: Send + Sync + 'static {
     pub fn set_handler<F, Fut>(&mut self, handler_func: F)
     where
         F: Fn(TRequest) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + 'static
+        Fut: MaybeSendFuture<Output = ()> + 'static
     {
         self.handler_entry = Some(Arc::new(move |ctx| {
             Box::pin(handler_func(ctx))

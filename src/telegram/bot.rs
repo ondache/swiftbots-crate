@@ -17,7 +17,7 @@ use crate::chat::bot::{BodyTransform, ChatCore};
 use crate::chat::middleware::{ChatContextLayer, RoutingLayer};
 use crate::basic::middleware::{box_bot_service, BaseHandler, EntryService};
 use crate::basic::types::OneshotBot;
-use crate::types::SwiftBotsError;
+use crate::types::{MaybeSendFuture, SwiftBotsError};
 use crate::chat::handlers::chat_handler_extractor;
 use crate::telegram::context::UpdateMeta;
 use crate::telegram::helpers::{standard_listener, standard_sender};
@@ -80,7 +80,7 @@ impl TelegramBot {
     pub fn message_handler<F, Fut>(mut self, commands: Vec<&str>, handler_func: F) -> Self
     where
         F: Fn(Request<Json>, ChatContext) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + 'static
+        Fut: MaybeSendFuture<Output = ()> + 'static
     {
         self.chat_core.append_message_handler(commands, handler_func);
         self
@@ -89,7 +89,7 @@ impl TelegramBot {
     pub fn default_handler<F, Fut>(mut self, handler_func: F) -> Self
     where
         F: Fn(Request<Json>, ChatContext) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + 'static
+        Fut: MaybeSendFuture<Output = ()> + 'static
     {
         self.chat_core.append_message_handler(vec![""], handler_func);
         self

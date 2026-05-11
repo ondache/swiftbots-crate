@@ -10,7 +10,7 @@ use crate::chat::context::{ChatContext, RoutingMeta, SendFnContext};
 use crate::chat::routing::build_token_trie;
 use crate::basic::middleware::{box_bot_service, BaseHandler, EntryService};
 use crate::chat::middleware::{ChatContextLayer, RoutingLayer};
-use crate::types::SwiftBotsError;
+use crate::types::{SwiftBotsError, MaybeSendFuture};
 use crate::chat::handlers::chat_handler_extractor;
 use serde_json::Value as JsonValue;
 use crate::basic::bot::BasicBotCore;
@@ -56,7 +56,7 @@ impl <TBody: BodyTransform> ChatBot <TBody> {
     pub fn listener<F, Fut>(mut self, listener_func: F) -> Self
     where
         F: Fn(UnboundedSender<Request<TBody>>) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + 'static
+        Fut: MaybeSendFuture<Output = ()> + 'static
     {
         self.core.set_listener(listener_func);
         self
@@ -65,7 +65,7 @@ impl <TBody: BodyTransform> ChatBot <TBody> {
     pub fn sender<F, Fut>(mut self, sender_func: F) -> Self
     where
         F: Fn(SendFnContext) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + 'static
+        Fut: MaybeSendFuture<Output = ()> + 'static
     {
         self.chat_core.set_sender(sender_func);
         self
@@ -74,7 +74,7 @@ impl <TBody: BodyTransform> ChatBot <TBody> {
     pub fn message_handler<F, Fut>(mut self, commands: Vec<&str>, handler_func: F) -> Self
     where
         F: Fn(Request<TBody>, ChatContext) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + 'static
+        Fut: MaybeSendFuture<Output = ()> + 'static
     {
         self.chat_core.append_message_handler(commands, handler_func);
         self
@@ -83,7 +83,7 @@ impl <TBody: BodyTransform> ChatBot <TBody> {
     pub fn default_handler<F, Fut>(mut self, handler_func: F) -> Self
     where
         F: Fn(Request<TBody>, ChatContext) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + 'static
+        Fut: MaybeSendFuture<Output = ()> + 'static
     {
         self.chat_core.append_message_handler(vec![""], handler_func);
         self
@@ -175,7 +175,7 @@ impl <TBody: BodyTransform> ChatCore <TBody> {
     pub fn set_sender<F, Fut>(&mut self, sender_func: F)
     where
         F: Fn(SendFnContext) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + 'static
+        Fut: MaybeSendFuture<Output = ()> + 'static
     {
         self.sender_entry = Some(Arc::new(move |ctx| {
             Box::pin(sender_func(ctx))
@@ -185,7 +185,7 @@ impl <TBody: BodyTransform> ChatCore <TBody> {
     pub fn append_message_handler<F, Fut>(&mut self, commands: Vec<&str>, handler_func: F)
     where
         F: Fn(Request<TBody>, ChatContext) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + 'static
+        Fut: MaybeSendFuture<Output = ()> + 'static
     {
         let command = ChatCommand {
             commands: commands.into_iter().map(|s| s.to_string()).collect(),
