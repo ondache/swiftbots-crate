@@ -1,14 +1,14 @@
 use std::sync::Arc;
 use std::rc::Rc;
 use tokio::sync::mpsc::UnboundedSender;
-use tower::{ServiceBuilder, ServiceExt};
+use tower::ServiceBuilder;
 use http::Request;
 use tracing::{debug, trace};
 use crate::bot::BotBox;
 use crate::chat::types::{ChatCommand, SenderFunction};
 use crate::chat::context::{ChatContext, RoutingMeta, SendFnContext};
 use crate::chat::routing::build_token_trie;
-use crate::basic::middleware::{BaseHandler, EntryService};
+use crate::basic::middleware::{box_bot_service, BaseHandler, EntryService};
 use crate::chat::middleware::{ChatContextLayer, RoutingLayer};
 use crate::types::SwiftBotsError;
 use crate::chat::handlers::chat_handler_extractor;
@@ -113,11 +113,11 @@ impl <TBody: BodyTransform> ChatBot <TBody> {
             .handler_entry
             .ok_or_else(|| SwiftBotsError::BotHasNoHandler(name.to_string()))?;
         let base_handler = BaseHandler::<Request<TBody>> { bot_entry: handler_entry };
-        let service = ServiceBuilder::new()
+        let service = box_bot_service(ServiceBuilder::new()
             .layer(ChatContextLayer{ctx_template: chat_context_template})
             .layer(RoutingLayer{trie: Arc::new(token_trie)})
             .service(EntryService { inner: base_handler })
-            .boxed_clone();
+        );
         let service_task_factory = BasicBotCore::get_service_tasks(
             name.clone(),
             service,
@@ -151,11 +151,11 @@ impl <TBody: BodyTransform> ChatBot <TBody> {
             .handler_entry
             .ok_or_else(|| SwiftBotsError::BotHasNoHandler(name.to_string()))?;
         let base_handler = BaseHandler::<Request<TBody>> { bot_entry: handler_entry };
-        let service = ServiceBuilder::new()
+        let service = box_bot_service(ServiceBuilder::new()
             .layer(ChatContextLayer{ctx_template: chat_context_template})
             .layer(RoutingLayer{trie: Arc::new(token_trie)})
             .service(EntryService { inner: base_handler })
-            .boxed_clone();
+        );
         Ok(OneshotBot{
             name: name,
             service: service,

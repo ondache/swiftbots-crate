@@ -1,4 +1,3 @@
-use std::pin::Pin;
 use std::task::{Context, Poll};
 use http::Request;
 use tower::{BoxError, Layer, Service};
@@ -6,6 +5,8 @@ use tracing::{info, trace};
 use crate::chat::context::SenderMeta;
 use crate::telegram::context::UpdateMeta;
 use crate::telegram::types::Json;
+use crate::types::BoxResultFuture;
+use crate::types::MaybeSendFuture;
 
 #[derive(Clone)]
 pub struct DeconstructTgMessageMiddleware<S> {
@@ -16,11 +17,11 @@ impl<S> Service<Request<Json>> for DeconstructTgMessageMiddleware<S>
 where
     S: Service<Request<Json>> + Send,
     S::Error: Into<BoxError>,
-    S::Future: Send + 'static,
+    S::Future: MaybeSendFuture + 'static,
 {
     type Response = S::Response;
     type Error = BoxError;
-    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
+    type Future = BoxResultFuture<Self::Response, Self::Error>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.inner.poll_ready(cx).map_err(Into::into)

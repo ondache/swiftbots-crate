@@ -3,16 +3,12 @@ use std::rc::Rc;
 use std::future::Future;
 
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
-use tower::{BoxError, Service, ServiceBuilder, ServiceExt};
-use tower::util::BoxCloneService;
+use tower::{Service, ServiceBuilder};
 use tracing::{debug, info, trace};
 
 use crate::types::{BoxFuture, SwiftBotsError};
 use crate::basic::types::{HandlerFunction, ListenerFunction, OneshotBot};
-use crate::basic::middleware::{
-    BaseHandler,
-    EntryService,
-};
+use crate::basic::middleware::{box_bot_service, BaseHandler, BotService, EntryService};
 use crate::bot::BotBox;
 
 pub struct BasicBot <TRequest> {
@@ -67,9 +63,9 @@ where TRequest: Send + Sync + 'static
             .handler_entry
             .ok_or_else(|| SwiftBotsError::BotHasNoHandler(name.to_string()))?;
         let base_handler = BaseHandler::<TRequest> { bot_entry: handler_entry };
-        let service = ServiceBuilder::new()
+        let service = box_bot_service(ServiceBuilder::new()
             .service(EntryService { inner: base_handler })
-            .boxed_clone();
+        );
         let service_task_factory = BasicBotCore::get_service_tasks(
             name.clone(),
             service,
@@ -91,9 +87,9 @@ where TRequest: Send + Sync + 'static
             .handler_entry.clone()
             .ok_or_else(|| SwiftBotsError::BotHasNoHandler(core.name.to_string()))?;
         let base_handler = BaseHandler::<TRequest> { bot_entry: handler_entry };
-        let service = ServiceBuilder::new()
+        let service = box_bot_service(ServiceBuilder::new()
             .service(EntryService { inner: base_handler })
-            .boxed_clone();
+        );
         Ok(OneshotBot {
             name: core.name.clone(),
             service,
@@ -132,7 +128,7 @@ where TRequest: Send + Sync + 'static {
 
     pub fn get_service_tasks(
         name: Arc<String>,
-        service: BoxCloneService<TRequest, (), BoxError>,
+        service: BotService<TRequest>,
         listener_entry: Arc<ListenerFunction<TRequest>>,
     ) -> Arc<dyn Fn() -> Vec<BoxFuture<()>> + 'static> {
         trace!("get_service_tasks");
@@ -149,7 +145,7 @@ where TRequest: Send + Sync + 'static {
 
     pub fn get_awaitable_handler(
         name: Arc<String>,
-        service: BoxCloneService<TRequest, (), BoxError>,
+        service: BotService<TRequest>,
         mut rx: UnboundedReceiver<TRequest>
     ) -> BoxFuture<()> {
         Box::pin(
@@ -158,6 +154,9 @@ where TRequest: Send + Sync + 'static {
                     if let Some(request) = rx.recv().await {
                         debug!("Bot '{}' received request", name);
                         let mut service = service.clone();
+                        #[cfg(target_family = "wasm")]
+                        tokio::task::spawn_local(service.call(request));
+                        #[cfg(not(target_family = "wasm"))]
                         tokio::spawn(service.call(request));
                     } else {
                         info!("Bot '{}' is stopped", name);

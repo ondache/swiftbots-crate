@@ -8,6 +8,21 @@ pub type BoxFuture<T> = Pin<Box<dyn Future<Output = T> + Send>>;
 #[cfg(target_family = "wasm")]
 pub type BoxFuture<T> = Pin<Box<dyn Future<Output = T>>>;
 
+#[cfg(not(target_family = "wasm"))]
+pub type BoxResultFuture<T, E> = Pin<Box<dyn Future<Output = Result<T, E>> + Send>>;
+#[cfg(target_family = "wasm")]
+pub type BoxResultFuture<T, E> = Pin<Box<dyn Future<Output = Result<T, E>>>>;
+
+#[cfg(not(target_family = "wasm"))]
+pub trait MaybeSendFuture: Future + Send {}
+#[cfg(not(target_family = "wasm"))]
+impl<T> MaybeSendFuture for T where T: Future + Send {}
+
+#[cfg(target_family = "wasm")]
+pub trait MaybeSendFuture: Future {}
+#[cfg(target_family = "wasm")]
+impl<T> MaybeSendFuture for T where T: Future {}
+
 
 #[derive(Debug)]
 pub enum SwiftBotsError {

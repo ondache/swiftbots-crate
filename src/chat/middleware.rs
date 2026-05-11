@@ -1,11 +1,12 @@
 use tower::{BoxError, Service, Layer};
-use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 use http::Request;
 use tracing::trace;
 use crate::chat::context::{ChatContext, RoutingMeta, SenderMeta};
 use crate::chat::routing::{TokenTrie, search_matched_commands};
+use crate::types::BoxResultFuture;
+use crate::types::MaybeSendFuture;
 
 #[derive(Clone)]
 pub struct RoutingMiddleware<S, TBody> {
@@ -17,12 +18,12 @@ impl<S, TBody> Service<Request<TBody>> for RoutingMiddleware<S, TBody>
 where
     S: Service<Request<TBody>> + Send,
     S::Error: Into<BoxError>,
-    S::Future: Send + 'static,
+    S::Future: MaybeSendFuture + 'static,
     TBody: Send + 'static + Clone,
 {
     type Response = S::Response;
     type Error = BoxError;
-    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
+    type Future = BoxResultFuture<Self::Response, Self::Error>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.inner.poll_ready(cx).map_err(Into::into)
@@ -102,11 +103,11 @@ impl<S, TBody> Service<Request<TBody>> for ChatContextMiddleware<S>
 where
     S: Service<Request<TBody>> + Send,
     S::Error: Into<BoxError>,
-    S::Future: Send + 'static,
+    S::Future: MaybeSendFuture + 'static,
 {
     type Response = S::Response;
     type Error = BoxError;
-    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
+    type Future = BoxResultFuture<Self::Response, Self::Error>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.inner.poll_ready(cx).map_err(Into::into)
