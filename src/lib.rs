@@ -5,6 +5,7 @@ pub mod types;
 pub mod utils;
 
 pub use crate::app::SwiftBots;
+pub use crate::types::SwiftBotsError;
 
 #[cfg(feature = "basic")]
 pub mod basic;
