@@ -1,4 +1,3 @@
-use std::pin::Pin;
 use std::sync::Arc;
 use http::Request;
 use crate::basic::types::ListenerFunction;
@@ -11,7 +10,7 @@ pub fn standard_listener(tg_core: Arc<TelegramCore>) -> Arc<ListenerFunction<Req
         let tg_core = tg_core.clone();
         Box::pin(async move {
             tg_core.get_updates(tx).await
-        }) as Pin<Box<dyn Future<Output=()> + Send>>
+        })
     })
 }
 
@@ -20,6 +19,6 @@ pub fn standard_sender(tg_core: Arc<TelegramCore>) -> Arc<SenderFunction> {
         let tg_core = tg_core.clone();
         Box::pin(async move {
             tg_core.send_message(ctx).await
-        }) as Pin<Box<dyn Future<Output=()> + Send>>
+        })
     })
 }
