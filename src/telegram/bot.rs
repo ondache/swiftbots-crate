@@ -234,7 +234,6 @@ impl TelegramCore {
                 .send()
                 .await
                 .map_err(|e| SwiftBotsError::HttpError(e.to_string()));
-            
             let response = match post_result {
                 Ok(res) => res,
                 Err(error) => {
@@ -250,12 +249,13 @@ impl TelegramCore {
                     continue;
                 }
             };
-            debug!("TG API response status: {}", response.status());
+            let response_status = response.status().as_u16();
+            debug!("TG API response status: {}", response_status);
             tracing::Span::current().record(
                 "response_code",
-                response.status().as_u16(),
+                response_status,
             );
-            match response.status().as_u16() {
+            match response_status {
                 200 => {
                     let result = response
                         .json::<Json>()
@@ -294,16 +294,16 @@ impl TelegramCore {
                 500..=599 => {
                     let error = SwiftBotsError::HttpError("TG API error: server error".to_string());
                     if retry_counter >= max_retries {
-                        warn!("TG API server error {}. Giving up on {} attempt", response.status(), max_retries);
+                        warn!("TG API server error {}. Giving up on {} attempt", response_status, max_retries);
                         return Err(error);
                     }
                     last_error = Some(error);
                     debug!("Sleep for 1 second before retrying");
                     sleep(Duration::from_secs(1)).await;
-                    info!("TG API server error {}. Retrying attempt: {}/{}", response.status(), retry_counter+1, max_retries);
+                    info!("TG API server error {}. Retrying attempt: {}/{}", response_status, retry_counter+1, max_retries);
                 },
                 _ => {
-                    error!("TG API error: unexpected status code: {}", response.status());
+                    error!("TG API error: unexpected status code: {}", response_status);
                     return Err(SwiftBotsError::HttpError("TG API error: unexpected status code".to_string()));
                 }
             };
