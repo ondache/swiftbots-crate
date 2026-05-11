@@ -5,12 +5,13 @@ pub mod types;
 pub mod utils;
 
 pub use crate::app::SwiftBots;
-pub use crate::bot::run_once;
 
 #[cfg(feature = "basic")]
 pub mod basic;
 #[cfg(feature = "basic")]
 pub use crate::basic::bot::BasicBot;
+#[cfg(feature = "basic")]
+pub use basic::functions::run_once;
 
 #[cfg(feature = "chat")]
 pub mod chat;

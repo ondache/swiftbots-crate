@@ -2,18 +2,18 @@ use std::sync::Arc;
 use std::rc::Rc;
 use std::future::Future;
 
-use tokio::sync::mpsc::{UnboundedSender, unbounded_channel, UnboundedReceiver};
-use tower::{ServiceBuilder, BoxError, ServiceExt, Service};
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
+use tower::{BoxError, Service, ServiceBuilder, ServiceExt};
 use tower::util::BoxCloneService;
 use tracing::{debug, info, trace};
 
 use crate::types::{BoxFuture, SwiftBotsError};
-use crate::basic::types::{ListenerFunction, HandlerFunction};
+use crate::basic::types::{HandlerFunction, ListenerFunction, OneshotBot};
 use crate::basic::middleware::{
     BaseHandler,
     EntryService,
 };
-use crate::bot::{BotBox, OneshotBot};
+use crate::bot::BotBox;
 
 pub struct BasicBot <TRequest> {
     core: BasicBotCore<TRequest>

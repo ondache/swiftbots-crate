@@ -9,13 +9,14 @@ use serde_json::Value as Json;
 use serde_json::json;
 use reqwest;
 use tokio::time::sleep;
-use crate::bot::{BotBox, OneshotBot};
+use crate::bot::BotBox;
 use crate::basic::bot::BasicBotCore;
 use crate::chat::context::{ChatContext, SendFnContext};
 use crate::chat::routing::build_token_trie;
 use crate::chat::bot::{BodyTransform, ChatCore};
-use crate::chat::middleware::{RoutingLayer, ChatContextLayer};
+use crate::chat::middleware::{ChatContextLayer, RoutingLayer};
 use crate::basic::middleware::{BaseHandler, EntryService};
+use crate::basic::types::OneshotBot;
 use crate::types::SwiftBotsError;
 use crate::chat::handlers::chat_handler_extractor;
 use crate::telegram::context::UpdateMeta;
@@ -41,7 +42,6 @@ impl TelegramBot {
         let tg_core = TelegramCore {
             token: token.to_string(),
             http_client: reqwest::ClientBuilder::new()
-                .timeout(Duration::from_secs(30))
                 .build()
                 .unwrap_or_else(|e| panic!("Failed to create HTTP client: {}", e)),
             allowed_updates: vec![],

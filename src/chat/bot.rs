@@ -4,16 +4,17 @@ use tokio::sync::mpsc::UnboundedSender;
 use tower::{ServiceBuilder, ServiceExt};
 use http::Request;
 use tracing::{debug, trace};
-use crate::bot::{BotBox, OneshotBot};
-use crate::chat::types::{SenderFunction, ChatCommand};
+use crate::bot::BotBox;
+use crate::chat::types::{ChatCommand, SenderFunction};
 use crate::chat::context::{ChatContext, RoutingMeta, SendFnContext};
 use crate::chat::routing::build_token_trie;
 use crate::basic::middleware::{BaseHandler, EntryService};
-use crate::chat::middleware::{RoutingLayer, ChatContextLayer};
+use crate::chat::middleware::{ChatContextLayer, RoutingLayer};
 use crate::types::SwiftBotsError;
 use crate::chat::handlers::chat_handler_extractor;
 use serde_json::Value as JsonValue;
 use crate::basic::bot::BasicBotCore;
+use crate::basic::types::OneshotBot;
 
 pub struct ChatBot <TBody> {
     core: BasicBotCore<Request<TBody>>,

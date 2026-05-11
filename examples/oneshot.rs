@@ -1,5 +1,6 @@
-use swiftbots::{BasicBot, run_once};
+use swiftbots::BasicBot;
 use tokio;
+use swiftbots::basic::functions::run_once;
 use swiftbots::types::SwiftBotsError;
 
 
