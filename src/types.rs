@@ -3,11 +3,11 @@ use std::pin::Pin;
 use std::future::Future;
 use fmt::Display;
 
-// #[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(target_family = "wasm"))]
 pub type BoxFuture<T> = Pin<Box<dyn Future<Output = T> + Send>>;
+#[cfg(target_family = "wasm")]
+pub type BoxFuture<T> = Pin<Box<dyn Future<Output = T>>>;
 
-// #[cfg(target_arch = "wasm32")]
-// pub type BoxFuture<T> = Pin<Box<dyn Future<Output = T>>>;
 
 #[derive(Debug)]
 pub enum SwiftBotsError {
