@@ -58,6 +58,14 @@ required-features = ["telegram"]
 name = "oneshot"
 required-features = ["basic"]
 
+[[test]]
+name = "basic_bot_test"
+required-features = ["basic"]
+
+[[test]]
+name = "token_trie_test"
+required-features = ["chat"]
+
 [lints.clippy]
 redundant_field_names = "allow"
 needless_return = "allow"
