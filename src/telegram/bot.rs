@@ -26,6 +26,7 @@ use crate::telegram::types::{FetchOptions, TgApiErrorStatus};
 
 static TEXT_WRAPPER: LazyLock<textwrap::Options> = LazyLock::new(|| 
     textwrap::Options::new(4096usize)
+        .word_separator(textwrap::WordSeparator::UnicodeBreakProperties)
         .line_ending(textwrap::LineEnding::CRLF)
 );
 

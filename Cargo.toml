@@ -1,6 +1,6 @@
 [package]
 name = "swiftbots"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2024"
 
 [dependencies]
@@ -11,7 +11,7 @@ http = { version = "1", optional = true, features = [] }
 regex = { version = "1", optional = true, features = [] }
 serde_json = { version = "1", optional = true, features = [] }
 reqwest = { version = "0.13", optional = true, features = ["json"] }
-textwrap = { version = "0.16", optional = true, features = [] }
+textwrap = { version = "0.16", optional = true, features = ["unicode-linebreak"] }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "io-std", "io-util"] }
