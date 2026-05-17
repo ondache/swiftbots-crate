@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use std::rc::Rc;
 use std::time::Duration;
 use tower::ServiceBuilder;
@@ -23,6 +23,11 @@ use crate::telegram::context::UpdateMeta;
 use crate::telegram::helpers::{standard_listener, standard_sender};
 use crate::telegram::middleware::DeconstructTgMessageLayer;
 use crate::telegram::types::{FetchOptions, TgApiErrorStatus};
+
+static TEXT_WRAPPER: LazyLock<textwrap::Options> = LazyLock::new(|| 
+    textwrap::Options::new(4096usize)
+        .line_ending(textwrap::LineEnding::CRLF)
+);
 
 pub struct TelegramBot {
     core: BasicBotCore<Request<Json>>,
@@ -312,7 +317,7 @@ impl TelegramCore {
     }
 
     pub async fn send_message(&self, ctx: SendFnContext){
-        for msg in textwrap::wrap(ctx.message.as_str(), 4096) {
+        for msg in textwrap::wrap(ctx.message.as_str(), &*TEXT_WRAPPER) {
             let send = json!({"chat_id": ctx.recipient, "text": msg});
             self.fetch("sendMessage", &send, FetchOptions::default())
                 .await
