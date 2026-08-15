@@ -1,6 +1,12 @@
 - add middlewares: error handling, rate limiting, trace
 - use macros for listeners, handlers and senders
+- add extractors for handlers
 - custom middlewares interface
 - make whitelisted and blacklisted users configurable
 - update onetime_handles
 - update task runner with shutdown and start bots actions
+- replace reqwest with hyper (hyper is too heavy)
+- implement simple scheduler
+- move tokio into feature mtr or multi-thread-runner
+- move tracing into feature tracing
+- add tests for chat bot
