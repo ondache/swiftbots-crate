@@ -16,4 +16,5 @@ check:
 	cargo clippy --features chat
 	cargo clippy --features telegram
 	cargo clippy --features full
-	cargo test
+	cargo test --all-features
+	cargo fmt --check --quiet
