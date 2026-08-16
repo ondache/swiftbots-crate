@@ -1,8 +1,5 @@
 pub mod app;
-pub mod bot;
-pub mod runner;
 pub mod types;
-pub mod utils;
 
 pub use crate::app::SwiftBots;
 pub use crate::types::SwiftBotsError;
@@ -25,3 +22,6 @@ pub use crate::chat::context::new_request;
 pub mod telegram;
 #[cfg(feature = "telegram")]
 pub use crate::telegram::bot::TelegramBot;
+
+#[cfg(feature = "rt-tokio")]
+pub mod rt_tokio;

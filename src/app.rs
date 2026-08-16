@@ -1,12 +1,11 @@
-use std::collections::HashMap;
-use crate::bot::BotBox;
-use crate::runner::TaskRunner;
-use crate::types::{SwiftBotsError};
-use std::rc::Rc;
+#[cfg(feature = "rt-tokio")]
+use crate::rt_tokio::TaskRunner;
+use crate::types::{SwiftBotsError, BotCore};
+use std::sync::Arc;
 use tracing::{info, error};
 
 pub struct SwiftBots {
-    bots: HashMap<String, Rc<BotBox>>,
+    bots: Vec<Arc<dyn BotCore>>,
 }
 
 impl Default for SwiftBots {
@@ -18,20 +17,27 @@ impl Default for SwiftBots {
 impl SwiftBots {
     pub fn new() -> Self {
         SwiftBots {
-            bots: HashMap::new()
+            bots: Vec::new()
         }
     }
 
-    pub fn add_bot(mut self, bot: Rc<BotBox>) -> Result<Self, SwiftBotsError> {
-        if self.bots.contains_key(bot.name.as_str()) {
-            let message = format!("Bot with name {} already exists", bot.name);
+    pub fn with_capacity(size: usize) -> Self {
+        SwiftBots {
+            bots: Vec::with_capacity(size)
+        }
+    }
+
+    pub fn add_bot(mut self, bot: Arc<dyn BotCore>) -> Result<Self, SwiftBotsError> {
+        if self.bots.iter().any(|bot| bot.name() == bot.name()) {
+            let message = format!("Bot with name {} already exists", bot.name());
             return Err(SwiftBotsError::DuplicateBotName(message));
         }
-        info!("Registering bot: {}", bot.name);
-        self.bots.insert(bot.name.to_string(), bot);
+        info!("Registering bot: {}", bot.name());
+        self.bots.push(bot);
         Ok(self)
     }
 
+    #[cfg(feature = "rt-tokio")]
     pub async fn run(self) {
         if self.bots.is_empty() {
             error!("No bots to run");

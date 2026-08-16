@@ -2,11 +2,18 @@ use std::fmt;
 use std::pin::Pin;
 use std::future::Future;
 use fmt::Display;
+use std::sync::Arc;
+
+pub trait BotCore: Send + Sync {
+    fn start(self: Arc<Self>) -> BoxFuture;
+    fn name(&self) -> &str;
+    fn enabled(&self) -> bool;
+}
 
 #[cfg(not(target_family = "wasm"))]
-pub type BoxFuture<T> = Pin<Box<dyn Future<Output = T> + Send>>;
+pub type BoxFuture = Pin<Box<dyn Future<Output = ()> + Send>>;
 #[cfg(target_family = "wasm")]
-pub type BoxFuture<T> = Pin<Box<dyn Future<Output = T>>>;
+pub type BoxFuture = Pin<Box<dyn Future<Output = ()>>>;
 
 #[cfg(not(target_family = "wasm"))]
 pub type BoxResultFuture<T, E> = Pin<Box<dyn Future<Output = Result<T, E>> + Send>>;

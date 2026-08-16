@@ -1,6 +1,6 @@
 [package]
 name = "swiftbots"
-version = "0.1.8"
+version = "0.2.0"
 edition = "2024"
 license = "Apache-2.0"
 
@@ -8,8 +8,8 @@ license = "Apache-2.0"
 crate-type = ["rlib"]
 
 [dependencies]
-tokio = { version = "1", features = ["sync", "rt", "time"] }
 tracing = { version = "0.1" }
+tokio = { version = "1", optional = true, features = ["sync", "rt", "time"] }
 tower = { version = "0.5", optional = true, features = ["util"] }
 http = { version = "1", optional = true }
 regex = { version = "1", optional = true }
@@ -23,6 +23,8 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [features]
 default = []
+
+rt-tokio = []
 
 basic = [
     "dep:tower",
@@ -44,31 +46,32 @@ full = [
     "basic",
     "chat",
     "telegram",
+    "rt-tokio"
 ]
 
 [[example]]
 name = "hello_world"
-required-features = ["basic"]
+required-features = ["basic", "rt-tokio"]
 
 [[example]]
 name = "chatbot"
-required-features = ["chat"]
+required-features = ["chat", "rt-tokio"]
 
 [[example]]
 name = "telegram"
-required-features = ["telegram"]
+required-features = ["telegram", "rt-tokio"]
 
 [[example]]
 name = "oneshot"
-required-features = ["basic"]
+required-features = ["basic", "rt-tokio"]
 
 [[test]]
 name = "basic_bot_test"
-required-features = ["basic"]
+required-features = ["basic", "rt-tokio"]
 
 [[test]]
 name = "token_trie_test"
-required-features = ["chat"]
+required-features = ["chat", "rt-tokio"]
 
 [lints.clippy]
 redundant_field_names = "allow"
