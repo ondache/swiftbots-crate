@@ -10,3 +10,4 @@
 - move tokio into feature mtr or multi-thread-runner
 - move tracing into feature tracing
 - add tests for chat bot
+- make rt tokio implement trait for bot

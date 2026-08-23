@@ -30,7 +30,7 @@ use crate::types::MaybeSendFuture;
 
 
 pub struct BaseHandler <TRequest> {
-    pub bot_entry: Arc<dyn Fn(TRequest) -> BoxFuture<()> + Send + Sync>,
+    pub bot_entry: Arc<dyn Fn(TRequest) -> BoxFuture<> + Send + Sync>,
 }
 
 impl<TRequest> Clone for BaseHandler<TRequest> {

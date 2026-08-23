@@ -4,8 +4,9 @@ use std::future::Future;
 use fmt::Display;
 use std::sync::Arc;
 
-pub trait BotCore: Send + Sync {
-    fn start(self: Arc<Self>) -> BoxFuture;
+#[async_trait::async_trait]
+pub trait Bot: Send + Sync {
+    async fn run(self: Arc<Self>);
     fn name(&self) -> &str;
     fn enabled(&self) -> bool;
 }

@@ -1,11 +1,11 @@
 #[cfg(feature = "rt-tokio")]
-use crate::rt_tokio::TaskRunner;
-use crate::types::{SwiftBotsError, BotCore};
+use crate::rt_tokio::Supervisor;
+use crate::types::{SwiftBotsError, Bot};
 use std::sync::Arc;
 use tracing::{info, error};
 
 pub struct SwiftBots {
-    bots: Vec<Arc<dyn BotCore>>,
+    bots: Vec<Arc<dyn Bot>>,
 }
 
 impl Default for SwiftBots {
@@ -27,13 +27,13 @@ impl SwiftBots {
         }
     }
 
-    pub fn add_bot(mut self, bot: Arc<dyn BotCore>) -> Result<Self, SwiftBotsError> {
+    pub fn add_bot<T: Bot + 'static>(mut self, bot: T) -> Result<Self, SwiftBotsError> {
         if self.bots.iter().any(|bot| bot.name() == bot.name()) {
             let message = format!("Bot with name {} already exists", bot.name());
             return Err(SwiftBotsError::DuplicateBotName(message));
         }
         info!("Registering bot: {}", bot.name());
-        self.bots.push(bot);
+        self.bots.push(Arc::new(bot));
         Ok(self)
     }
 
@@ -44,7 +44,7 @@ impl SwiftBots {
             return;
         }
         info!("Starting SwiftBots application with {} bots", self.bots.len());
-        TaskRunner::new(self.bots)
+        Supervisor::new(self.bots)
             .run_app()
             .await;
     }

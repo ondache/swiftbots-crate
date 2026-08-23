@@ -1,4 +1,4 @@
-use crate::types::BotCore;
+use crate::types::Bot;
 use std::sync::Arc;
 #[cfg(target_family = "wasm")]
 use tokio::task::LocalSet;
@@ -6,13 +6,13 @@ use tokio::task::LocalSet;
 use tokio::task::JoinSet;
 use tracing::{info, debug, warn};
 
-pub struct TaskRunner {
-    bots: Vec<Arc<dyn BotCore>>,
+pub struct Supervisor {
+    bots: Vec<Arc<dyn Bot>>,
 }
 
-impl TaskRunner {
-    pub fn new(bots: Vec<Arc<dyn BotCore>>) -> Self {
-        TaskRunner {
+impl Supervisor {
+    pub fn new(bots: Vec<Arc<dyn Bot>>) -> Self {
+        Supervisor {
             bots,
         }
     }
@@ -33,7 +33,7 @@ impl TaskRunner {
             #[cfg(target_family = "wasm")]
             set.spawn_local_on(bot.clone().start(), &local);
             #[cfg(not(target_family = "wasm"))]
-            set.spawn(bot.clone().start());
+            set.spawn(bot.clone().run());
         }
 
         #[cfg(target_family = "wasm")]

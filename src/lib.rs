@@ -25,3 +25,4 @@ pub use crate::telegram::bot::TelegramBot;
 
 #[cfg(feature = "rt-tokio")]
 pub mod rt_tokio;
+pub mod basic_tower;

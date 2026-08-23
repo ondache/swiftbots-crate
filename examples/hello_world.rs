@@ -3,22 +3,46 @@ use tokio;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use swiftbots::types::SwiftBotsError;
 
+struct EchoBot {
+    name: &'static str,
+    enabled: bool
+}
+
+impl EchoBot {
+    fn new(name: &'static str) -> Self {
+        EchoBot { name, enabled: true }
+    }
+}
+
+#[async_trait::async_trait]
+impl BasicBot for EchoBot {
+    type Message = String;
+
+    fn name(&self) -> &str {
+        self.name
+    }
+
+    fn enabled(&self) -> bool {
+        self.enabled
+    }
+
+    async fn listen(&self) -> Self::Message {
+        let message = read_line().await;
+        message
+    }
+
+    async fn handle(&self, message: Self::Message) {
+        println!("Received message: {}", message);
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), SwiftBotsError>{
-    let bot = BasicBot::new("console bot")
-        .listener(async |tx| {
-            loop {
-                let message = read_line().await;
-                tx.send(message).unwrap();
-            }
-        })
-        .handler(async |req| {
-            println!("Received message: {}", req);
-        });
+    let bot = EchoBot::new("echo bot");
 
-    println!("Welcome to the console bot! Type anything and press enter:");
+    println!("Welcome to the {} bot! Type anything and press enter:", bot.name);
     SwiftBots::new()
-        .add_bot(bot.build()?)?
+        .add_bot(bot)?
         .run()
         .await;
     Ok(())
