@@ -4,12 +4,12 @@ pub mod types;
 pub use crate::app::SwiftBots;
 pub use crate::types::SwiftBotsError;
 
-#[cfg(feature = "basic")]
-pub mod basic;
-#[cfg(feature = "basic")]
-pub use crate::basic::bot::BasicBot;
-#[cfg(feature = "basic")]
-pub use basic::functions::run_once;
+#[cfg(feature = "event-bot")]
+pub mod event_bot;
+#[cfg(feature = "event-bot")]
+pub use crate::event_bot::bot::EventBot;
+#[cfg(feature = "event-bot")]
+pub use event_bot::functions::run_once;
 
 #[cfg(feature = "chat")]
 pub mod chat;
@@ -25,4 +25,3 @@ pub use crate::telegram::bot::TelegramBot;
 
 #[cfg(feature = "rt-tokio")]
 pub mod rt_tokio;
-pub mod basic_tower;

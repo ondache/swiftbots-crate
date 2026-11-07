@@ -1,7 +1,7 @@
-use swiftbots::BasicBot;
+use swiftbots::EventBot;
 use tokio;
 use tokio::io::{AsyncBufReadExt, BufReader};
-use swiftbots::basic::functions::run_once;
+use swiftbots::event_bot::functions::run_once;
 use swiftbots::types::SwiftBotsError;
 
 struct EchoBot {
@@ -16,7 +16,7 @@ impl EchoBot {
 }
 
 #[async_trait::async_trait]
-impl BasicBot for EchoBot {
+impl EventBot for EchoBot {
     type Message = String;
 
     fn name(&self) -> &str {

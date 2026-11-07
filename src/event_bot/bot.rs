@@ -1,17 +1,17 @@
 use std::sync::Arc;
-use std::rc::Rc;
+// use std::rc::Rc;
 
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
-use tower::{Service, ServiceBuilder};
-use tracing::{debug, info, trace};
+// use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
+// use tower::{Service, ServiceBuilder};
+// use tracing::{debug, info, trace};
 
-use crate::types::{BoxFuture, MaybeSendFuture, SwiftBotsError};
-use crate::basic::types::{HandlerFunction, ListenerFunction, OneshotBot};
-use crate::basic::middleware::{box_bot_service, BaseHandler, BotService, EntryService};
+// use crate::types::{BoxFuture, MaybeSendFuture, SwiftBotsError};
+// use crate::event_bot::types::{HandlerFunction, ListenerFunction, OneshotBot};
+// use crate::event_bot::middleware::{box_bot_service, BaseHandler, BotService, EntryService};
 use crate::types::{Bot};
 
 #[async_trait::async_trait]
-pub trait BasicBot: Send + Sync {
+pub trait EventBot: Send + Sync {
     type Message;
     fn name(&self) -> &str;
     fn enabled(&self) -> bool;
@@ -27,7 +27,7 @@ pub trait SpawnPolicy<M>
 #[async_trait::async_trait]
 impl <T> Bot for T
 where
-    T: BasicBot + SpawnPolicy<T::Message>
+    T: EventBot + SpawnPolicy<T::Message>
 {
     async fn run(self: Arc<Self>) {
         loop {

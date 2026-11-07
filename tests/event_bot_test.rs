@@ -1,5 +1,5 @@
 use std::sync::atomic::{AtomicBool, Ordering};
-use swiftbots::{BasicBot, SwiftBots};
+use swiftbots::{EventBot, SwiftBots};
 use tokio;
 use tokio::sync::mpsc::{channel, Sender};
 use swiftbots::types::SwiftBotsError;
@@ -10,7 +10,7 @@ struct Bot1 {
 }
 
 #[async_trait::async_trait]
-impl BasicBot for Bot1 {
+impl EventBot for Bot1 {
     type Message = String;
 
     fn name(&self) -> &str { "" }

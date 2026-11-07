@@ -1,5 +1,5 @@
 use tower::Service;
-use crate::basic::types::OneshotBot;
+use crate::event_bot::types::OneshotBot;
 use crate::types::SwiftBotsError;
 
 pub async fn run_once<TRequest>(bot: &mut OneshotBot<TRequest>, request: TRequest) -> Result<(), SwiftBotsError> {

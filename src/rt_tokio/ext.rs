@@ -1,12 +1,12 @@
 use std::sync::Arc;
-#[cfg(feature = "basic")]
-use crate::basic::bot::{SpawnPolicy, BasicBot};
+#[cfg(feature = "event_bot")]
+use crate::event_bot::bot::{SpawnPolicy, EventBot};
 
-#[cfg(feature = "basic")]
+#[cfg(feature = "event_bot")]
 impl<M, B> SpawnPolicy<M> for B
 where
     M: Send + 'static,
-    B: BasicBot<Message = M> + 'static
+    B: EventBot<Message = M> + 'static
 {
     fn spawn_handle(self: Arc<Self>, message: M)
     {

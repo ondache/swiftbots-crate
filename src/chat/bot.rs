@@ -8,13 +8,13 @@ use crate::bot::BotBox;
 use crate::chat::types::{ChatCommand, SenderFunction};
 use crate::chat::context::{ChatContext, RoutingMeta, SendFnContext};
 use crate::chat::routing::build_token_trie;
-use crate::basic::middleware::{box_bot_service, BaseHandler, EntryService};
+use crate::event_bot::middleware::{box_bot_service, BaseHandler, EntryService};
 use crate::chat::middleware::{ChatContextLayer, RoutingLayer};
 use crate::types::{SwiftBotsError, MaybeSendFuture};
 use crate::chat::handlers::chat_handler_extractor;
 use serde_json::Value as JsonValue;
-use crate::basic::bot::BasicBotCore;
-use crate::basic::types::OneshotBot;
+use crate::event_bot::bot::BasicBotCore;
+use crate::event_bot::types::OneshotBot;
 
 pub struct ChatBot <TBody> {
     core: BasicBotCore<Request<TBody>>,

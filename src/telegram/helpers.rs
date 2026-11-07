@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use http::Request;
-use crate::basic::types::ListenerFunction;
+use crate::event_bot::types::ListenerFunction;
 use crate::chat::types::SenderFunction;
 use crate::telegram::bot::TelegramCore;
 use crate::telegram::types::Json;
