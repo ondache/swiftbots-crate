@@ -1,6 +1,5 @@
 use crate::types::Bot;
 use std::sync::Arc;
-use std::sync::atomic::Ordering;
 use tracing::{info, debug, warn};
 #[cfg(target_family = "wasm")]
 use tokio::task::LocalSet;

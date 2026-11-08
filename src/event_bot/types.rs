@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use std::sync::atomic::AtomicBool;
 
 #[async_trait::async_trait]
 pub trait EventBot {
