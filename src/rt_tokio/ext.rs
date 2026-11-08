@@ -1,3 +1,4 @@
+#[cfg(feature = "event-bot")]
 use std::sync::Arc;
 #[cfg(feature = "event-bot")]
 use crate::event_bot::types::{SpawnPolicy, EventBot};

@@ -2,7 +2,9 @@
 use crate::rt_tokio::Supervisor;
 use crate::types::{SwiftBotsError, Bot};
 use std::sync::Arc;
-use tracing::{info, error};
+use tracing::{info};
+#[cfg(feature = "rt-tokio")]
+use tracing::{error};
 
 pub struct SwiftBots {
     bots: Vec<Arc<dyn Bot>>,
