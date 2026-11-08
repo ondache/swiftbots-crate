@@ -9,46 +9,38 @@ use crate::event_bot::types::{EventBot, SpawnPolicy};
 // use crate::types::{BoxFuture, MaybeSendFuture, SwiftBotsError};
 // use crate::event_bot::types::{HandlerFunction, ListenerFunction, OneshotBot};
 // use crate::event_bot::middleware::{box_bot_service, BaseHandler, BotService, EntryService};
-use crate::types::{Bot};
+use crate::types::Bot;
 
 
-pub struct EventBotImpl_TempName<B>
+pub struct EventBotRunner<B>
 where B: EventBot + SpawnPolicy<<B as EventBot>::Message>
 {
-    pub event_core: Arc<B>
+    pub inner: Arc<B>
 }
 
-impl <B> EventBotImpl_TempName<B>
+impl <B> EventBotRunner<B>
 where B: EventBot + SpawnPolicy<<B as EventBot>::Message>
 {
     pub fn new(bot: B) -> Self {
-        Self { event_core: Arc::new(bot) }
+        Self { inner: Arc::new(bot) }
     }
 }
 
 #[async_trait::async_trait]
-impl<B> Bot for EventBotImpl_TempName<B>
+impl<B> Bot for EventBotRunner<B>
 where
     B: EventBot + SpawnPolicy<<B as EventBot>::Message> + Send + Sync,
 {
     async fn run(self: Arc<Self>) {
-        run_event_bot(self.event_core.clone()).await
-        // let bot = self.event_core.clone();
-        // loop {
-        //     if !bot.enabled().load(Ordering::Relaxed) {
-        //         break;
-        //     }
-        //     let message = bot.listen().await;
-        //     bot.clone().spawn_handle(message);
-        // }
+        run_event_bot(self.inner.clone()).await
     }
 
     fn name(&self) -> &str {
-        self.event_core.name()
+        self.inner.name()
     }
 
     fn enabled(&self) -> bool {
-        self.event_core.enabled()
+        self.inner.enabled()
     }
 }
 

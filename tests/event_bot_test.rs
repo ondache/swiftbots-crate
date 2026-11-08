@@ -3,7 +3,7 @@ use swiftbots::{SwiftBots};
 use tokio;
 use tokio::sync::mpsc::{channel, Sender};
 use swiftbots::types::SwiftBotsError;
-use swiftbots::event_bot::bot::{EventBotImpl_TempName};
+use swiftbots::event_bot::bot::{EventBotRunner};
 use swiftbots::event_bot::types::EventBot;
 
 struct Bot1 {
@@ -36,7 +36,7 @@ async fn base_handler_test() -> Result<(), SwiftBotsError>{
     let (result_tx, mut result_rx) = channel(1);
     let bot = Bot1{tx: result_tx, enabled: AtomicBool::new(true)};
 
-    let a = EventBotImpl_TempName::new(bot);
+    let a = EventBotRunner::new(bot);
 
     SwiftBots::new()
         .add_bot(a)?

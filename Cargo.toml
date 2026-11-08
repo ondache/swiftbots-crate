@@ -31,12 +31,16 @@ rt-tokio = [
 
 event-bot = []
 
+event-bot-middlewares = [
+    "event-bot",
+    "dep:tower"
+]
+
 chat = [
     "event-bot",
     "dep:http",
     "dep:regex",
-    "dep:serde_json",
-    "dep:tower"
+    "dep:serde_json"
 ]
 
 telegram = [
@@ -47,6 +51,7 @@ telegram = [
 
 full = [
     "event-bot",
+    "event-bot-middlewares",
     "chat",
     "telegram",
     "rt-tokio"
