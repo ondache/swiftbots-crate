@@ -4,8 +4,6 @@ use tokio::task::JoinSet;
 use tracing::{info, debug, warn};
 #[cfg(target_family = "wasm")]
 use tokio::task::LocalSet;
-#[cfg(not(target_family = "wasm"))]
-use tokio::task::JoinSet;
 
 pub struct Supervisor {
     bots: Vec<Arc<dyn Bot>>,

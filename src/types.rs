@@ -4,9 +4,16 @@ use std::future::Future;
 use fmt::Display;
 use std::sync::Arc;
 
+pub trait Bot: RunnableBot + BotMetadata {}
+
+impl<T: RunnableBot + BotMetadata> Bot for T {}
+
 #[async_trait::async_trait]
-pub trait Bot {
+pub trait RunnableBot {
     async fn run(self: Arc<Self>);
+}
+
+pub trait BotMetadata {
     fn name(&self) -> &str;
     fn enabled(&self) -> bool;
 }

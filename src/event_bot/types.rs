@@ -1,12 +1,24 @@
 use std::sync::Arc;
+use crate::types::BotMetadata;
+
+pub trait EventBot:
+    BotMetadata
+    + EventHandler<Self::Message>
+    + EventListener<Self::Message>
+{
+    type Message;
+}
 
 #[async_trait::async_trait]
-pub trait EventBot {
-    type Message;
-    async fn listen(&self) -> Self::Message;
-    async fn handle(&self, message: Self::Message);
-    fn name(&self) -> &str;
-    fn enabled(&self) -> bool;
+pub trait EventHandler<M>
+{
+    async fn handle(&self, message: M);
+}
+
+#[async_trait::async_trait]
+pub trait EventListener<M>
+{
+    async fn listen(&self) -> M;
 }
 
 pub trait SpawnPolicy<M>

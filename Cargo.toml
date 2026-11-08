@@ -89,7 +89,7 @@ required-features = ["event-bot", "rt-tokio"]
 
 [[test]]
 name = "oneshot_test"
-required-features = ["event-bot", "rt-tokio"]
+required-features = ["event-bot"]
 
 [[test]]
 name = "token_trie_test"

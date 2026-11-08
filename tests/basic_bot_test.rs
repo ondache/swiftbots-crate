@@ -1,6 +1,5 @@
 use std::sync::Arc;
-use std::sync::atomic::AtomicBool;
-use swiftbots::types::{Bot, SwiftBotsError};
+use swiftbots::types::{BotMetadata, RunnableBot, SwiftBotsError};
 use swiftbots::SwiftBots;
 use tokio;
 use tokio::sync::mpsc::{Sender, channel};
@@ -11,16 +10,16 @@ struct Bot1 {
 }
 
 #[async_trait::async_trait]
-impl Bot for Bot1 {
-    fn name(&self) -> &str { "" }
-
-    fn enabled(&self) -> bool {
-        self.enabled
-    }
-
+impl RunnableBot for Bot1 {
     async fn run(self: Arc<Self>) {
         self.tx.clone().send(11).await.unwrap();
     }
+}
+
+impl BotMetadata for Bot1 {
+    fn name(&self) -> &str { "" }
+
+    fn enabled(&self) -> bool { self.enabled }
 }
 
 #[tokio::test]
