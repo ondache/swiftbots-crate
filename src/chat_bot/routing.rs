@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 use regex::{Regex, RegexBuilder, escape, Error};
-use crate::chat::types::{ChatCommand, MessageHandlerFunction};
+use crate::chat::types::{ChatCommandLegacy, MessageHandlerFunction};
 use std::collections::{BinaryHeap, HashMap};
 use std::sync::Arc;
 use http::Request;
@@ -42,7 +42,7 @@ impl<TBody> Ord for CompiledCommand <TBody> {
 pub const FINAL_INDICATOR: &str = "";
 
 pub fn build_token_trie <TBody>(
-    handlers: Vec<ChatCommand<Request<TBody>>>
+    handlers: Vec<ChatCommandLegacy<Request<TBody>>>
 ) -> Result<TokenTrie<TBody>, Error> {
     let mut compiled_commands: Vec<CompiledCommand<TBody>> = vec![];
     for handler in handlers {

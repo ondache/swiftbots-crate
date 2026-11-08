@@ -4,36 +4,76 @@ use tokio::sync::mpsc::UnboundedSender;
 use tower::ServiceBuilder;
 use http::Request;
 use tracing::{debug, trace};
-use crate::bot::BotBox;
-use crate::chat::types::{ChatCommand, SenderFunction};
-use crate::chat::context::{ChatContext, RoutingMeta, SendFnContext};
-use crate::chat::routing::build_token_trie;
+use crate::chat_bot::context::{ChatContext, RoutingMeta, SendFnContext};
+use crate::chat_bot::routing::build_token_trie;
 use crate::event_bot::middleware::{box_bot_service, BaseHandler, EntryService};
-use crate::chat::middleware::{ChatContextLayer, RoutingLayer};
-use crate::types::{SwiftBotsError, MaybeSendFuture};
-use crate::chat::handlers::chat_handler_extractor;
+use crate::chat_bot::middleware::{ChatContextLayer, RoutingLayer};
+use crate::types::{SwiftBotsError, MaybeSendFuture, Bot};
+use crate::chat_bot::types::{ChatBot, MessageHandler};
+use crate::chat_bot::handlers::chat_handler_extractor;
 use serde_json::Value as JsonValue;
-use crate::event_bot::bot::BasicBotCore;
-use crate::event_bot::types::OneshotBot;
+use crate::event_bot::bot::{EventBot, SpawnPolicy};
 
-pub struct ChatBot <TBody> {
-    core: BasicBotCore<Request<TBody>>,
-    chat_core: ChatCore<TBody>,
-
-    pub error_message: Option<String>,
-    pub unknown_message: Option<String>,
-    pub refuse_message: Option<String>,
+pub struct ChatBotWithMiddlewares_TempName {
+    pub name: &'static str,
+    pub enabled: bool,
 }
 
+impl ChatBotWithMiddlewares_TempName {
+    pub fn new(name: &'static str) -> Self {
+        Self {
+            name: name,
+            enabled: true,
+        }
+    }
+}
 
-impl <TBody: BodyTransform> ChatBot <TBody> {
+impl<TBody: Send + 'static> EventBot for ChatBotWithMiddlewares_TempName<TBody> {
+    type Message = Request<TBody>;
+
+    async fn listen(&self) -> Self::Message {
+        
+    }
+
+    async fn handle(&self, message: Self::Message) {
+        
+    }
+}
+
+impl<TBody> Bot for ChatBotWithMiddlewares_TempName<TBody> {
+    async fn run(self: Arc<Self>) {
+        self.run()
+    }
+
+    fn name(&self) -> &str {
+        self.name
+    }
+
+    fn enabled(&self) -> bool {
+        self.enabled
+    }
+}
+
+impl <TBody> ChatBot for ChatBotWithMiddlewares_TempName<TBody>
+{
+    fn message_handlers(&self) -> Vec<dyn MessageHandler<Self::Message>> {
+        todo!()
+    }
+}
+
+pub struct ChatBotWithMiddlewaresBuilder_TempName <TBody> {
+    error_message: Option<&'static str>,
+    unknown_message: Option<&'static str>,
+    refuse_message: Option<&'static str>,
+    run_at_startup: bool,
+}
+
+impl <TBody> ChatBotWithMiddlewaresBuilder_TempName <TBody> {
     pub fn new(name: &str) -> Self {
-        ChatBot {
+        ChatBotWithMiddlewaresBuilder_TempName {
             core: BasicBotCore {
                 name: Arc::new(name.to_string()),
                 run_at_startup: true,
-                listener_entry: None,
-                handler_entry: Some(chat_handler_extractor(TBody::transform_body)),
             },
             chat_core: ChatCore {
                 sender_entry: None,
@@ -45,23 +85,81 @@ impl <TBody: BodyTransform> ChatBot <TBody> {
             error_message: None,
             unknown_message: None,
             refuse_message: None,
+            run_at_startup: true,
         }
     }
 
     pub fn run_at_startup(mut self, run_at_startup: bool) -> Self {
-        self.core.run_at_startup = run_at_startup;
+        self.run_at_startup = run_at_startup;
         self
     }
 
-    pub fn listener<F, Fut>(mut self, listener_func: F) -> Self
-    where
-        F: Fn(UnboundedSender<Request<TBody>>) -> Fut + Send + Sync + 'static,
-        Fut: MaybeSendFuture<Output = ()> + 'static
-    {
-        self.core.set_listener(listener_func);
+    pub fn set_error_message(mut self, error_message: &'static str) -> Self {
+        self.error_message = Some(error_message);
         self
     }
 
+    pub fn set_unknown_message(mut self, unknown_message: &'static str) -> Self {
+        self.unknown_message = Some(unknown_message);
+        self
+    }
+
+    pub fn set_refuse_message(mut self, refuse_message: &'static str) -> Self {
+        self.refuse_message = Some(refuse_message);
+        self
+    }
+
+    pub fn build(self) -> Result<ChatBotWithMiddlewares_TempName<TBody>, SwiftBotsError> {
+        // let core = self.core;
+        // let mut chat_core = self.chat_core;
+        // let name = core.name.clone();
+        chat_core.error_message = self.error_message.unwrap_or(chat_core.error_message);
+        chat_core.refuse_message = self.refuse_message.unwrap_or(chat_core.refuse_message);
+        chat_core.unknown_message = self.unknown_message.unwrap_or(chat_core.unknown_message);
+        debug!("Building bot: {}", name);
+        let listener_entry = core
+            .listener_entry
+            .as_ref()
+            .ok_or_else(|| SwiftBotsError::BotHasNoListener(name.to_string()))?
+            .clone();
+        let sender_entry = chat_core
+            .sender_entry.as_ref()
+            .ok_or_else(|| SwiftBotsError::BotHasNoSender(name.to_string()))?
+            .clone();
+        let chat_context_template = chat_core.make_chat_context(sender_entry.clone());
+        let token_trie = build_token_trie(chat_core.message_handlers)
+            .map_err(|e| SwiftBotsError::InvalidCommand(name.to_string(), e.to_string()))?;
+        let handler_entry = core
+            .handler_entry
+            .ok_or_else(|| SwiftBotsError::BotHasNoHandler(name.to_string()))?;
+        let base_handler = BaseHandler::<Request<TBody>> { bot_entry: handler_entry };
+        let service = box_bot_service(ServiceBuilder::new()
+            .layer(ChatContextLayer{ctx_template: chat_context_template})
+            .layer(RoutingLayer{trie: Arc::new(token_trie)})
+            .service(EntryService { inner: base_handler })
+        );
+        let service_task_factory = BasicBotCore::get_service_tasks(
+            name.clone(),
+            service,
+            listener_entry,
+        );
+        Ok(Rc::new(BotBox {
+            enabled: core.run_at_startup,
+            name,
+            service_task_factory,
+            service_handles: vec![],
+            onetime_handles: vec![],
+        }))
+    }
+}
+
+pub struct ChatBotInstLegacy<TBody> {
+    core: BasicBotCore<Request<TBody>>,
+    chat_core: ChatCore<TBody>,
+}
+
+
+impl <TBody: BodyTransform> ChatBotInstLegacy<TBody> {
     pub fn sender<F, Fut>(mut self, sender_func: F) -> Self
     where
         F: Fn(SendFnContext) -> Fut + Send + Sync + 'static,
@@ -168,7 +266,7 @@ pub struct ChatCore <TBody> {
     pub unknown_message: String,
     pub refuse_message: String,
     pub sender_entry: Option<Arc<SenderFunction>>,
-    pub message_handlers: Vec<ChatCommand<Request<TBody>>>,
+    pub message_handlers: Vec<ChatCommandLegacy<Request<TBody>>>,
 }
 
 impl <TBody: BodyTransform> ChatCore <TBody> {
@@ -187,7 +285,7 @@ impl <TBody: BodyTransform> ChatCore <TBody> {
         F: Fn(Request<TBody>, ChatContext) -> Fut + Send + Sync + 'static,
         Fut: MaybeSendFuture<Output = ()> + 'static
     {
-        let command = ChatCommand {
+        let command = ChatCommandLegacy {
             commands: commands.into_iter().map(|s| s.to_string()).collect(),
             callback: Arc::new(move |req, ctx| {
                 Box::pin(handler_func(req, ctx))

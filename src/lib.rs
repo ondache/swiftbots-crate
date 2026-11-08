@@ -6,17 +6,13 @@ pub use crate::types::SwiftBotsError;
 
 #[cfg(feature = "event-bot")]
 pub mod event_bot;
-#[cfg(feature = "event-bot")]
-pub use crate::event_bot::bot::EventBot;
-#[cfg(feature = "event-bot")]
-pub use event_bot::functions::run_once;
 
 #[cfg(feature = "chat")]
-pub mod chat;
+pub mod chat_bot;
 #[cfg(feature = "chat")]
-pub use crate::chat::bot::ChatBot;
+pub use crate::chat_bot::bot::ChatBotInstLegacy;
 #[cfg(feature = "chat")]
-pub use crate::chat::context::new_request;
+pub use crate::chat_bot::context::new_request;
 
 #[cfg(feature = "telegram")]
 pub mod telegram;

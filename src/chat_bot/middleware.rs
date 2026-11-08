@@ -3,8 +3,8 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 use http::Request;
 use tracing::trace;
-use crate::chat::context::{ChatContext, RoutingMeta, SenderMeta};
-use crate::chat::routing::{TokenTrie, search_matched_commands};
+use crate::chat_bot::context::{ChatContext, RoutingMeta, SenderMeta};
+use crate::chat_bot::routing::{TokenTrie, search_matched_commands};
 use crate::types::BoxResultFuture;
 use crate::types::MaybeSendFuture;
 

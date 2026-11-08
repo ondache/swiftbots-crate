@@ -1,6 +1,7 @@
 // fn main() {}
 
-use swiftbots::{SwiftBots, ChatBot, new_request};
+use swiftbots::{SwiftBots, ChatBotInstLegacy, new_request};
+use swiftbots::chat::types::{ChatBot, MessageHandler};
 use tokio;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tracing_subscriber;
@@ -11,7 +12,7 @@ async fn main() -> Result<(), SwiftBotsError> {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
         .init();
-    let bot = ChatBot::new("chat bot")
+    let bot = ChatBotInstLegacy::new("chat bot")
         .listener(|tx| async move {
             loop {
                 let msg = read_line().await;

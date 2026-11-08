@@ -1,6 +1,6 @@
 use std::sync::Arc;
-use swiftbots::chat::routing::{TokenTrie, CompiledCommand, insert_token_trie, search_matched_commands, compile_command_as_regex};
-use swiftbots::chat::types::MessageHandlerFunction;
+use swiftbots::chat_bot::routing::{TokenTrie, CompiledCommand, insert_token_trie, search_matched_commands, compile_command_as_regex};
+use swiftbots::chat_bot::types::MessageHandlerFunction;
 use http::Request;
 
 fn mock_handler() -> Arc<MessageHandlerFunction<Request<()>>> {

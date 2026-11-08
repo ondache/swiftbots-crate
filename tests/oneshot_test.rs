@@ -1,5 +1,5 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
-use swiftbots::EventBot;
+use swiftbots::event_bot::types::EventBot;
 use tokio;
 use swiftbots::types::SwiftBotsError;
 

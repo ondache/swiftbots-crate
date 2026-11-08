@@ -1,8 +1,10 @@
 use std::sync::atomic::{AtomicBool, Ordering};
-use swiftbots::{EventBot, SwiftBots};
+use swiftbots::{SwiftBots};
 use tokio;
 use tokio::sync::mpsc::{channel, Sender};
 use swiftbots::types::SwiftBotsError;
+use swiftbots::event_bot::bot::{EventBotImpl_TempName};
+use swiftbots::event_bot::types::EventBot;
 
 struct Bot1 {
     tx: Sender<String>,
@@ -34,13 +36,15 @@ async fn base_handler_test() -> Result<(), SwiftBotsError>{
     let (result_tx, mut result_rx) = channel(1);
     let bot = Bot1{tx: result_tx, enabled: AtomicBool::new(true)};
 
+    let a = EventBotImpl_TempName::new(bot);
+
     SwiftBots::new()
-        .add_bot(bot)?
+        .add_bot(a)?
         .run()
         .await;
 
     assert!(!result_rx.is_empty());
-    let should_value = result_rx.recv().await.unwrap();
-    assert_eq!(should_value, "Test Value 12");
+    let fact_value = result_rx.recv().await.unwrap();
+    assert_eq!(fact_value, "Test Value 12");
     Ok(())
 }

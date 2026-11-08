@@ -1,2 +1,2 @@
 pub mod bot;
-pub mod middleware;
+pub mod types;

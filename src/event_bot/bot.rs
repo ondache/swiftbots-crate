@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use crate::event_bot::types::{EventBot, SpawnPolicy};
 // use std::rc::Rc;
 
 // use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
@@ -10,43 +11,72 @@ use std::sync::Arc;
 // use crate::event_bot::middleware::{box_bot_service, BaseHandler, BotService, EntryService};
 use crate::types::{Bot};
 
-#[async_trait::async_trait]
-pub trait EventBot: Send + Sync {
-    type Message;
-    fn name(&self) -> &str;
-    fn enabled(&self) -> bool;
-    async fn listen(&self) -> Self::Message;
-    async fn handle(&self, message: Self::Message);
-}
 
-pub trait SpawnPolicy<M>
+pub struct EventBotImpl_TempName<B>
+where B: EventBot + SpawnPolicy<<B as EventBot>::Message>
 {
-    fn spawn_handle(self: Arc<Self>, message: M);
+    pub event_core: Arc<B>
+}
+
+impl <B> EventBotImpl_TempName<B>
+where B: EventBot + SpawnPolicy<<B as EventBot>::Message>
+{
+    pub fn new(bot: B) -> Self {
+        Self { event_core: Arc::new(bot) }
+    }
 }
 
 #[async_trait::async_trait]
-impl <T> Bot for T
+impl<B> Bot for EventBotImpl_TempName<B>
 where
-    T: EventBot + SpawnPolicy<T::Message>
+    B: EventBot + SpawnPolicy<<B as EventBot>::Message> + Send + Sync,
 {
     async fn run(self: Arc<Self>) {
-        loop {
-            if !self.enabled() {
-                break;
-            }
-            let message = self.listen().await;
-            self.clone().spawn_handle(message);
-        }
+        run_event_bot(self.event_core.clone()).await
+        // let bot = self.event_core.clone();
+        // loop {
+        //     if !bot.enabled().load(Ordering::Relaxed) {
+        //         break;
+        //     }
+        //     let message = bot.listen().await;
+        //     bot.clone().spawn_handle(message);
+        // }
     }
 
     fn name(&self) -> &str {
-        self.name()
+        self.event_core.name()
     }
 
     fn enabled(&self) -> bool {
-        self.enabled()
+        self.event_core.enabled()
     }
 }
+
+pub async fn run_event_bot <B>(bot: Arc<B>)
+where
+    B: EventBot + SpawnPolicy<<B as EventBot>::Message> + Send + Sync,
+{
+    loop {
+        if !bot.enabled() {
+            break;
+        }
+        let message = bot.listen().await;
+        bot.clone().spawn_handle(message);
+    }
+}
+
+// impl <T> EventBot for T
+// where T: Bot + SpawnPolicy<Self::Message> {
+//     type Message = Self::Message;
+// 
+//     async fn listen(&self) -> Self::Message {
+//         self.listen()
+//     }
+// 
+//     async fn handle(&self, message: Self::Message) {
+//         self.handle(message)
+//     }
+// }
 
 // impl <TRequest> BotCoreBuildable for BasicBot<TRequest>
 // where TRequest: Send + Sync + 'static {

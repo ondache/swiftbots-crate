@@ -35,7 +35,8 @@ chat = [
     "event-bot",
     "dep:http",
     "dep:regex",
-    "dep:serde_json"
+    "dep:serde_json",
+    "dep:tower"
 ]
 
 telegram = [
@@ -67,12 +68,22 @@ required-features = ["telegram", "rt-tokio"]
 name = "oneshot"
 required-features = ["event-bot", "rt-tokio"]
 
+
+
+[[test]]
+name = "basic_bot_test"
+required-features = ["rt-tokio"]
+
+[[test]]
+name = "chat_bot_test"
+required-features = ["chat", "rt-tokio"]
+
 [[test]]
 name = "event_bot_test"
 required-features = ["event-bot", "rt-tokio"]
 
 [[test]]
-name = "event_oneshot_test"
+name = "oneshot_test"
 required-features = ["event-bot", "rt-tokio"]
 
 [[test]]

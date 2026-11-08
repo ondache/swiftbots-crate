@@ -5,7 +5,7 @@ use fmt::Display;
 use std::sync::Arc;
 
 #[async_trait::async_trait]
-pub trait Bot: Send + Sync {
+pub trait Bot {
     async fn run(self: Arc<Self>);
     fn name(&self) -> &str;
     fn enabled(&self) -> bool;
